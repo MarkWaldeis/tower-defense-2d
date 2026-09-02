@@ -4,9 +4,7 @@ export class SoundSynthesizer {
   public enabled: boolean = true;
   private bgmInterval: number | null = null;
 
-  private constructor() {
-    // Initialized lazily on first user interaction
-  }
+  private constructor() {}
 
   public static getInstance(): SoundSynthesizer {
     if (!SoundSynthesizer.instance) {
@@ -38,29 +36,30 @@ export class SoundSynthesizer {
     return this.enabled;
   }
 
-  public playUiClick() {
+  public playUiClick(): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
+    // Wooden thud / tactile click
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.04);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(320, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.05);
 
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start();
-    osc.stop(ctx.currentTime + 0.05);
+    osc.stop(ctx.currentTime + 0.06);
   }
 
-  public playError() {
+  public playError(): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
@@ -69,10 +68,10 @@ export class SoundSynthesizer {
     const gain = ctx.createGain();
 
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(160, ctx.currentTime);
-    osc.frequency.setValueAtTime(120, ctx.currentTime + 0.08);
+    osc.frequency.setValueAtTime(140, ctx.currentTime);
+    osc.frequency.setValueAtTime(100, ctx.currentTime + 0.08);
 
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
 
     osc.connect(gain);
@@ -82,7 +81,7 @@ export class SoundSynthesizer {
     osc.stop(ctx.currentTime + 0.2);
   }
 
-  public playShoot(type: string) {
+  public playShoot(type: string): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
@@ -92,73 +91,59 @@ export class SoundSynthesizer {
     const gain = ctx.createGain();
 
     switch (type) {
-      case 'GATLING':
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(450, t);
-        osc.frequency.exponentialRampToValueAtTime(90, t + 0.07);
-        gain.gain.setValueAtTime(0.12, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.08);
+      case 'SLINGER': {
+        // Whoosh of stone sling
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(550, t);
+        osc.frequency.exponentialRampToValueAtTime(160, t + 0.08);
+        gain.gain.setValueAtTime(0.14, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
         break;
-
-      case 'ROCKET':
-        // Launch hiss
+      }
+      case 'CROSSBOW': {
+        // Sharp metallic crossbow release
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(220, t);
-        osc.frequency.linearRampToValueAtTime(600, t + 0.15);
+        osc.frequency.setValueAtTime(700, t);
+        osc.frequency.exponentialRampToValueAtTime(120, t + 0.06);
         gain.gain.setValueAtTime(0.15, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.22);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
         break;
-
-      case 'CRYO':
-        // Ice crystal shimmer
+      }
+      case 'MAGE': {
+        // Arcane magical sparkle hum
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(900, t);
-        osc.frequency.exponentialRampToValueAtTime(400, t + 0.18);
-        gain.gain.setValueAtTime(0.1, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.2);
+        osc.frequency.setValueAtTime(880, t);
+        osc.frequency.exponentialRampToValueAtTime(440, t + 0.15);
+        gain.gain.setValueAtTime(0.16, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
         break;
-
-      case 'TESLA':
-        // Zap sound
+      }
+      case 'MORTAR': {
+        // Dragon cannon mortar thud
         osc.type = 'square';
-        osc.frequency.setValueAtTime(80, t);
-        osc.frequency.setValueAtTime(1400, t + 0.02);
-        osc.frequency.setValueAtTime(300, t + 0.06);
-        gain.gain.setValueAtTime(0.12, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.14);
+        osc.frequency.setValueAtTime(180, t);
+        osc.frequency.exponentialRampToValueAtTime(45, t + 0.22);
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
         break;
-
-      default:
+      }
+      default: {
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, t);
-        osc.frequency.exponentialRampToValueAtTime(150, t + 0.08);
+        osc.frequency.setValueAtTime(400, t);
+        osc.frequency.exponentialRampToValueAtTime(100, t + 0.08);
         gain.gain.setValueAtTime(0.1, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.09);
         break;
+      }
     }
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.3);
   }
 
-  public playExplosion(isHeavy = false) {
+  public playExplosion(isHeavy = false): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
@@ -166,7 +151,6 @@ export class SoundSynthesizer {
     const t = ctx.currentTime;
     const duration = isHeavy ? 0.45 : 0.25;
 
-    // Noise buffer for blast crunch
     const bufferSize = ctx.sampleRate * duration;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -179,11 +163,11 @@ export class SoundSynthesizer {
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(isHeavy ? 400 : 800, t);
+    filter.frequency.setValueAtTime(isHeavy ? 350 : 650, t);
     filter.frequency.exponentialRampToValueAtTime(40, t + duration);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(isHeavy ? 0.35 : 0.2, t);
+    gain.gain.setValueAtTime(isHeavy ? 0.38 : 0.2, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
 
     noise.connect(filter);
@@ -194,7 +178,35 @@ export class SoundSynthesizer {
     noise.stop(t + duration);
   }
 
-  public playCoin() {
+  public playLightningStrike(): void {
+    if (!this.enabled) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    // Crackling electric burst
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1600, t);
+    osc.frequency.setValueAtTime(300, t + 0.04);
+    osc.frequency.setValueAtTime(900, t + 0.08);
+    osc.frequency.setValueAtTime(80, t + 0.15);
+
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.35);
+
+    this.playExplosion(true);
+  }
+
+  public playCoin(): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
@@ -204,10 +216,10 @@ export class SoundSynthesizer {
     const gain = ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(987.77, t); // B5
+    osc.frequency.setValueAtTime(1046.50, t); // C6
     osc.frequency.setValueAtTime(1318.51, t + 0.06); // E6
 
-    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.setValueAtTime(0.12, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
 
     osc.connect(gain);
@@ -217,32 +229,32 @@ export class SoundSynthesizer {
     osc.stop(t + 0.22);
   }
 
-  public playUpgrade() {
+  public playUpgrade(): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
     const t = ctx.currentTime;
-    const freqs = [440, 554.37, 659.25, 880]; // A major arpeggio
+    const freqs = [392, 523.25, 659.25, 783.99]; // G C E G
     freqs.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, t + idx * 0.05);
 
-      gain.gain.setValueAtTime(0.08, t + idx * 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.05 + 0.12);
+      gain.gain.setValueAtTime(0.12, t + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.05 + 0.14);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(t + idx * 0.05);
-      osc.stop(t + idx * 0.05 + 0.14);
+      osc.stop(t + idx * 0.05 + 0.16);
     });
   }
 
-  public playWaveStart() {
+  public playWaveHorn(): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
@@ -251,28 +263,29 @@ export class SoundSynthesizer {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
+    // War Horn sound
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(220, t);
-    osc.frequency.exponentialRampToValueAtTime(440, t + 0.2);
-    osc.frequency.exponentialRampToValueAtTime(880, t + 0.35);
+    osc.frequency.linearRampToValueAtTime(277.18, t + 0.25);
+    osc.frequency.linearRampToValueAtTime(329.63, t + 0.45);
 
-    gain.gain.setValueAtTime(0.18, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    gain.gain.setValueAtTime(0.22, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(t);
-    osc.stop(t + 0.5);
+    osc.stop(t + 0.75);
   }
 
-  public playVictory() {
+  public playVictory(): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
     const t = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.50]; // C - E - G - C
+    const notes = [392, 523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -280,50 +293,50 @@ export class SoundSynthesizer {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, t + i * 0.12);
 
-      gain.gain.setValueAtTime(0.15, t + i * 0.12);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.35);
+      gain.gain.setValueAtTime(0.18, t + i * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.4);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(t + i * 0.12);
-      osc.stop(t + i * 0.12 + 0.4);
+      osc.stop(t + i * 0.12 + 0.45);
     });
   }
 
-  public playGameOver() {
+  public playGameOver(): void {
     if (!this.enabled) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
     const t = ctx.currentTime;
-    const notes = [400, 350, 300, 220];
+    const notes = [330, 311.13, 293.66, 220];
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, t + i * 0.15);
+      osc.frequency.setValueAtTime(freq, t + i * 0.16);
 
-      gain.gain.setValueAtTime(0.15, t + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.25);
+      gain.gain.setValueAtTime(0.18, t + i * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.16 + 0.28);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.start(t + i * 0.15);
-      osc.stop(t + i * 0.15 + 0.3);
+      osc.start(t + i * 0.16);
+      osc.stop(t + i * 0.16 + 0.32);
     });
   }
 
-  public startBGM() {
+  public startBGM(): void {
     if (!this.enabled || this.bgmInterval !== null) return;
     const ctx = this.getContext();
     if (!ctx) return;
 
-    // Ambient Synth pulse
     let step = 0;
-    const bassline = [110, 110, 130.81, 146.83, 110, 98, 110, 164.81];
+    // Desert Fantasy theme bass arpeggio (Phrygian Dominant scale: D, Eb, F#, G, A, Bb, C)
+    const melody = [146.83, 155.56, 185.00, 196.00, 146.83, 185.00, 220.00, 155.56];
 
     this.bgmInterval = window.setInterval(() => {
       if (!this.enabled) return;
@@ -331,23 +344,23 @@ export class SoundSynthesizer {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'sine';
-      const freq = bassline[step % bassline.length];
+      osc.type = 'triangle';
+      const freq = melody[step % melody.length];
       osc.frequency.setValueAtTime(freq, t);
 
-      gain.gain.setValueAtTime(0.04, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      gain.gain.setValueAtTime(0.035, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(t);
-      osc.stop(t + 0.38);
+      osc.stop(t + 0.4);
       step++;
-    }, 450);
+    }, 400);
   }
 
-  public stopBGM() {
+  public stopBGM(): void {
     if (this.bgmInterval !== null) {
       clearInterval(this.bgmInterval);
       this.bgmInterval = null;

@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
-import { MainMenuScene } from './scenes/MainMenuScene';
-import { LevelSelectScene } from './scenes/LevelSelectScene';
+import { WorldMapScene } from './scenes/WorldMapScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 
@@ -10,7 +9,7 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'game-container',
   width: 1024,
   height: 640,
-  backgroundColor: '#060911',
+  backgroundColor: '#2e1a0d',
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -30,13 +29,12 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false
     }
   },
-  scene: [BootScene, MainMenuScene, LevelSelectScene, GameScene, UIScene]
+  scene: [BootScene, WorldMapScene, GameScene, UIScene]
 };
 
 // Initialize Game
 export const game = new Phaser.Game(config);
 
-// Handle window resize & orientation changes for mobile
 window.addEventListener('resize', () => {
   if (game && game.scale) {
     game.scale.refresh();

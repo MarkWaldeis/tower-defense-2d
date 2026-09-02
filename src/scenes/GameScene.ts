@@ -1,14 +1,13 @@
 import Phaser from 'phaser';
 import { MAPS, TOWERS_CONFIG, generateWaves } from '../config/GameConfig';
-import { MapData, TowerType, EnemyType } from '../types/game';
-import { GridManager } from '../systems/GridManager';
+import { MapData, TowerType, EnemyType, BuildSpot } from '../types/game';
 import { WaveManager } from '../systems/WaveManager';
 import { JuiceManager } from '../systems/JuiceManager';
 import { SoundSynthesizer } from '../audio/SoundSynthesizer';
 import { SaveManager } from '../systems/SaveManager';
 import { Tower } from '../entities/towers/Tower';
 import { Enemy } from '../entities/enemies/Enemy';
-import { Bullet, Missile } from '../entities/projectiles/ProjectilePool';
+import { FantasyProjectile } from '../entities/projectiles/ProjectilePool';
 import { UIScene } from './UIScene';
 
 export class GameScene extends Phaser.Scene {
@@ -16,13 +15,12 @@ export class GameScene extends Phaser.Scene {
   public mapData!: MapData;
 
   // Systems
-  public gridManager!: GridManager;
   public waveManager!: WaveManager;
   public juiceManager!: JuiceManager;
   private uiScene!: UIScene;
 
-  // Game Economy & State
-  public gold: number = 450;
+  // Economy & State
+  public gold: number = 320;
   public lives: number = 20;
   public score: number = 0;
   public totalKills: number = 0;
@@ -31,15 +29,19 @@ export class GameScene extends Phaser.Scene {
   public isGameOver: boolean = false;
 
   // Entities
+  public buildSpots: BuildSpot[] = [];
+  public buildSpotObjects: Phaser.GameObjects.Sprite[] = [];
   public towers: Tower[] = [];
   public enemies: Enemy[] = [];
-  public bulletPool: Bullet[] = [];
-  public missilePool: Missile[] = [];
+  public projectilePool: FantasyProjectile[] = [];
 
-  // Interaction State
-  private buildModeType: TowerType | null = null;
-  private hoverCol: number = -1;
-  private hoverRow: number = -1;
+  // Spell Active State
+  public activeSpell: 'LIGHTNING' | 'METEOR' | null = null;
+  public selectedSpotIndex: number | null = null;
+  public selectedTower: Tower | null = null;
+
+  // Range Circle
+  private rangeGraphics!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super('GameScene');
@@ -57,90 +59,248 @@ export class GameScene extends Phaser.Scene {
     this.isGameOver = false;
     this.towers = [];
     this.enemies = [];
-    this.bulletPool = [];
-    this.missilePool = [];
-    this.buildModeType = null;
+    this.projectilePool = [];
+    this.buildSpots = this.mapData.buildSpots.map((p, i) => ({
+      id: i,
+      x: p.x,
+      y: p.y,
+      occupied: false
+    }));
   }
 
   public create(): void {
     const { width, height } = this.scale;
 
-    // 1. Systems setup
-    this.gridManager = new GridManager(this, this.mapData);
+    // 1. Render Kingdom Rush Frontiers Hand-Drawn Desert Map
+    this.renderDesertMap(width, height);
+
+    // 2. Systems setup
     this.juiceManager = new JuiceManager(this);
+    this.rangeGraphics = this.add.graphics().setDepth(15);
 
-    // 2. Projectile Pools (Pre-allocate for performance)
+    // 3. Projectile Pool
     for (let i = 0; i < 40; i++) {
-      const b = new Bullet(this);
-      b.deactivate();
-      this.bulletPool.push(b);
+      const p = new FantasyProjectile(this);
+      p.deactivate();
+      this.projectilePool.push(p);
     }
 
-    for (let i = 0; i < 20; i++) {
-      const m = new Missile(this);
-      m.deactivate();
-      this.missilePool.push(m);
-    }
+    // 4. Render Build Spot Foundations
+    this.renderBuildSpots();
 
-    // 3. Wave Manager setup
+    // 5. Wave Manager setup
     const waves = generateWaves(this.mapData.totalWaves);
     this.waveManager = new WaveManager(this, waves, this.mapData.waypoints);
     this.setupWaveCallbacks();
 
-    // 4. UI Scene Launch
+    // 6. Launch UI Scene
     this.scene.launch('UIScene', { gameScene: this });
     this.uiScene = this.scene.get('UIScene') as UIScene;
 
-    // 5. Fit Map to Screen / Camera
-    this.fitCameraToMap(width, height);
-
-    // 6. Input Event Listeners
+    // 7. Inputs
     this.setupInputHandlers();
 
-    // Start subtle BGM synth
+    // Sound BGM
     SoundSynthesizer.getInstance().startBGM();
 
-    // Initial HUD update
     this.time.delayedCall(100, () => {
       this.updateHUD();
     });
   }
 
-  private fitCameraToMap(screenWidth: number, screenHeight: number): void {
-    const mapPixelWidth = this.mapData.cols * this.mapData.tileSize;
-    const mapPixelHeight = this.mapData.rows * this.mapData.tileSize;
+  private renderDesertMap(width: number, height: number): void {
+    const g = this.add.graphics().setDepth(1);
 
-    const zoomX = screenWidth / (mapPixelWidth + 60);
-    const zoomY = screenHeight / (mapPixelHeight + 160);
-    const zoom = Math.min(zoomX, zoomY, 1.2);
+    // 1. Canyon Sandstone Background
+    g.fillGradientStyle(0xdfba81, 0xdfba81, 0xcda063, 0xcda063, 1);
+    g.fillRect(0, 0, width, height);
 
-    this.cameras.main.setZoom(zoom);
-    this.cameras.main.centerOn(mapPixelWidth / 2, mapPixelHeight / 2 - 20);
+    // 2. Canyon Cliffs (Top & Bottom rock borders)
+    g.fillStyle(0x926639, 1);
+    // North Canyon Wall
+    g.fillRect(0, 0, width, 110);
+    g.lineStyle(3, 0x543618, 1);
+    g.strokeRect(0, 0, width, 110);
+
+    // South Canyon Wall
+    g.fillStyle(0x82542a, 1);
+    g.fillRect(0, height - 70, width, 70);
+    g.strokeRect(0, height - 70, width, 70);
+
+    // 3. Ancient Sandstone Temple 1 (Upper Left)
+    this.drawAncientTemple(g, 180, 50, 'TEMPEL DER SONNE');
+
+    // 4. Ancient Sandstone Temple 2 (Upper Right)
+    this.drawAncientTemple(g, 810, 50, 'RUINEN VON RA');
+
+    // 5. Central Oasis (Water pool + Palms + Cacti)
+    g.fillStyle(0x38bdf8, 1);
+    g.fillEllipse(540, 340, 95, 55);
+    g.lineStyle(3, 0x0284c7, 1);
+    g.strokeEllipse(540, 340, 95, 55);
+    // Water reflection ring
+    g.fillStyle(0xe0f2fe, 0.4);
+    g.fillEllipse(530, 335, 50, 24);
+
+    this.drawPalm(475, 310);
+    this.drawPalm(610, 320);
+    this.drawPalm(580, 375);
+    this.drawCactus(460, 360);
+    this.drawCactus(630, 360);
+
+    // 6. Terracotta Desert Houses in lower canyon
+    this.drawDesertHouse(g, 260, 500);
+    this.drawDesertHouse(g, 780, 480);
+
+    // 7. Winding Sandy Road (Wide dirt track with stones & tracks)
+    const pts = this.mapData.waypoints;
+    g.lineStyle(42, 0xc29358, 1);
+    g.beginPath();
+    g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) {
+      g.lineTo(pts[i].x, pts[i].y);
+    }
+    g.strokePath();
+
+    // Road Outline
+    g.lineStyle(3, 0x7c532b, 0.75);
+    g.strokePath();
+
+    // Road Inner Sand Glow
+    g.lineStyle(24, 0xdfba81, 0.85);
+    g.strokePath();
+
+    // Spawn Mountain Cave (Left Portal)
+    g.fillStyle(0x3e2714, 1);
+    g.fillRoundedRect(10, 175, 50, 90, 8);
+    g.lineStyle(4, 0x78350f, 1);
+    g.strokeRoundedRect(10, 175, 50, 90, 8);
+    this.add.text(35, 220, '👹 SPAWN', {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '10px',
+      fontStyle: '900',
+      color: '#fde047'
+    }).setOrigin(0.5).setDepth(2);
+
+    // Fortress Base Exit (Right Portal)
+    g.fillStyle(0x1e293b, 1);
+    g.fillRoundedRect(width - 60, 165, 50, 90, 8);
+    g.lineStyle(4, 0x3b82f6, 1);
+    g.strokeRoundedRect(width - 60, 165, 50, 90, 8);
+    this.add.text(width - 35, 210, '🏰 BASIS', {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '10px',
+      fontStyle: '900',
+      color: '#38bdf8'
+    }).setOrigin(0.5).setDepth(2);
+  }
+
+  private drawAncientTemple(g: Phaser.GameObjects.Graphics, x: number, y: number, label: string): void {
+    // Temple Roof / Pediment
+    g.fillStyle(0xdfba81, 1);
+    g.fillTriangle(x, y - 18, x - 55, y + 10, x + 55, y + 10);
+    g.lineStyle(2, 0x78350f, 1);
+    g.strokeTriangle(x, y - 18, x - 55, y + 10, x + 55, y + 10);
+
+    // Pillars
+    g.fillStyle(0xfef3c7, 1);
+    for (let px = x - 42; px <= x + 42; px += 28) {
+      g.fillRect(px - 5, y + 10, 10, 32);
+      g.strokeRect(px - 5, y + 10, 10, 32);
+    }
+
+    // Temple Base Step
+    g.fillRect(x - 60, y + 42, 120, 12);
+    g.strokeRect(x - 60, y + 42, 120, 12);
+
+    this.add.text(x, y + 26, label, {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '8px',
+      fontStyle: 'bold',
+      color: '#78350f'
+    }).setOrigin(0.5).setDepth(2);
+  }
+
+  private drawPalm(x: number, y: number): void {
+    const g = this.add.graphics().setDepth(2);
+    g.lineStyle(4, 0x78350f, 1);
+    g.beginPath();
+    g.moveTo(x, y + 20);
+    g.lineTo(x, y);
+    g.strokePath();
+
+    g.fillStyle(0x16a34a, 1);
+    g.fillCircle(x - 10, y - 4, 9);
+    g.fillCircle(x + 10, y - 4, 9);
+    g.fillCircle(x, y - 10, 10);
+  }
+
+  private drawCactus(x: number, y: number): void {
+    const g = this.add.graphics().setDepth(2);
+    g.fillStyle(0x15803d, 1);
+    g.fillRoundedRect(x - 3, y - 14, 6, 20, 2);
+    g.fillRoundedRect(x - 9, y - 10, 6, 4, 2);
+    g.fillRoundedRect(x - 9, y - 14, 4, 8, 2);
+    g.fillRoundedRect(x + 3, y - 6, 6, 4, 2);
+    g.fillRoundedRect(x + 5, y - 10, 4, 8, 2);
+  }
+
+  private drawDesertHouse(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+    g.fillStyle(0xfef08a, 1);
+    g.fillRoundedRect(x - 22, y - 16, 44, 32, 4);
+    g.lineStyle(2, 0x92400e, 1);
+    g.strokeRoundedRect(x - 22, y - 16, 44, 32, 4);
+    // Wooden Door & Window
+    g.fillStyle(0x78350f, 1);
+    g.fillRect(x - 6, y, 12, 16);
+    g.fillStyle(0x38bdf8, 1);
+    g.fillRect(x - 16, y - 8, 7, 7);
+  }
+
+  private renderBuildSpots(): void {
+    this.buildSpots.forEach((spot, index) => {
+      const sprite = this.add.sprite(spot.x, spot.y, 'build_spot_empty')
+        .setInteractive({ useHandCursor: true })
+        .setDepth(3);
+
+      sprite.on('pointerover', () => {
+        if (!spot.occupied) {
+          sprite.setScale(1.1);
+        }
+      });
+
+      sprite.on('pointerout', () => {
+        sprite.setScale(1.0);
+      });
+
+      sprite.on('pointerdown', () => {
+        SoundSynthesizer.getInstance().playUiClick();
+        this.handleSpotClick(index);
+      });
+
+      this.buildSpotObjects.push(sprite);
+    });
   }
 
   private setupWaveCallbacks(): void {
     this.waveManager.setCallbacks(
-      // On spawn enemy
       (type: EnemyType) => {
-        const enemy = new Enemy(this, type, this.mapData.waypoints, 1.0 + (this.waveManager.currentWaveNumber - 1) * 0.12);
+        const enemy = new Enemy(this, type, this.mapData.waypoints, 1.0 + (this.waveManager.currentWaveNumber - 1) * 0.1);
         enemy.setCallbacks(
           (deadEnemy) => this.handleEnemyDeath(deadEnemy),
           (breachedEnemy) => this.handleEnemyBreach(breachedEnemy)
         );
         this.enemies.push(enemy);
       },
-      // On wave complete
       (waveNumber: number, reward: number) => {
         this.addGold(reward);
-        this.score += waveNumber * 100;
+        this.score += waveNumber * 120;
         this.uiScene.setWaveButtonState(false);
         this.updateHUD();
       },
-      // On all waves complete (VICTORY!)
       () => {
         this.handleVictory();
       },
-      // On wave start
       (waveNumber: number, isBoss: boolean) => {
         this.uiScene.setWaveButtonState(true);
         this.uiScene.showWaveBanner(waveNumber, isBoss);
@@ -149,97 +309,112 @@ export class GameScene extends Phaser.Scene {
   }
 
   private setupInputHandlers(): void {
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      const coord = this.gridManager.pixelToGrid(worldPoint.x, worldPoint.y);
-
-      if (coord.col !== this.hoverCol || coord.row !== this.hoverRow) {
-        this.hoverCol = coord.col;
-        this.hoverRow = coord.row;
-
-        if (this.buildModeType) {
-          const stats = TOWERS_CONFIG[this.buildModeType];
-          this.gridManager.showPlacementPreview(coord.col, coord.row, stats.range);
-        }
-      }
-    });
-
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // Ignore if clicking UI DOM overlay elements
-      if ((pointer.event.target as HTMLElement).closest('.hud-overlay')) {
+      // If clicking outside HUD and spell is active
+      if (this.activeSpell) {
+        if (this.activeSpell === 'LIGHTNING') {
+          this.castLightningSpell(pointer.x, pointer.y);
+        }
+        this.activeSpell = null;
+        this.uiScene.clearSpellSelection();
         return;
       }
-
-      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      const coord = this.gridManager.pixelToGrid(worldPoint.x, worldPoint.y);
-
-      if (this.buildModeType) {
-        // Build tower
-        this.tryBuildTower(coord.col, coord.row, this.buildModeType);
-      } else {
-        // Inspect clicked tower
-        const clickedTower = this.towers.find(t => t.gridCol === coord.col && t.gridRow === coord.row);
-        if (clickedTower) {
-          SoundSynthesizer.getInstance().playUiClick();
-          this.gridManager.showTowerRange(clickedTower.x, clickedTower.y, clickedTower.currentRange);
-          this.uiScene.openInspectCard(clickedTower);
-        } else {
-          this.uiScene.closeInspectCard();
-        }
-      }
     });
   }
 
-  public setBuildMode(type: TowerType | null): void {
-    this.buildModeType = type;
-    if (!type) {
-      this.gridManager.clearPreview();
+  public handleSpotClick(spotIndex: number): void {
+    const spot = this.buildSpots[spotIndex];
+    if (!spot) return;
+
+    if (!spot.occupied) {
+      // Open Radial / Drawer Build Menu for this spot
+      this.selectedSpotIndex = spotIndex;
+      this.selectedTower = null;
+      this.uiScene.openBuildMenuForSpot(spotIndex, spot.x, spot.y);
+      this.showRange(spot.x, spot.y, TOWERS_CONFIG.SLINGER.range);
+    } else {
+      // Find existing tower on this spot
+      const tower = this.towers.find(t => t.spotIndex === spotIndex);
+      if (tower) {
+        this.selectedTower = tower;
+        this.selectedSpotIndex = null;
+        this.uiScene.openInspectCard(tower);
+        this.showRange(tower.x, tower.y, tower.currentRange);
+      }
     }
   }
 
-  public tryBuildTower(col: number, row: number, type: TowerType): boolean {
+  public buildTowerOnSpot(spotIndex: number, type: TowerType): boolean {
+    const spot = this.buildSpots[spotIndex];
     const stats = TOWERS_CONFIG[type];
 
-    if (!this.gridManager.isBuildable(col, row)) {
-      SoundSynthesizer.getInstance().playError();
-      return false;
-    }
-
+    if (!spot || spot.occupied) return false;
     if (this.gold < stats.cost) {
       SoundSynthesizer.getInstance().playError();
       return false;
     }
 
-    // Spend gold and construct tower
     this.spendGold(stats.cost);
-    const center = this.gridManager.gridToPixelCenter(col, row);
-    const tower = new Tower(this, center.x, center.y, col, row, type);
+    spot.occupied = true;
+    this.buildSpotObjects[spotIndex].setVisible(false);
+
+    const tower = new Tower(this, spot.x, spot.y, spotIndex, type);
     this.towers.push(tower);
-    this.gridManager.setOccupied(col, row, true);
 
     SoundSynthesizer.getInstance().playUpgrade();
-    this.juiceManager.explode(center.x, center.y, 0x00f2ff, 10, 0.8);
-
-    // Keep build mode on for quick multi-placement, but refresh preview
-    this.gridManager.showPlacementPreview(col, row, stats.range);
+    this.juiceManager.explode(spot.x, spot.y, 0xf59e0b, 15, 1);
+    this.clearRange();
     this.updateHUD();
 
     return true;
   }
 
   public removeTower(tower: Tower): void {
-    this.gridManager.setOccupied(tower.gridCol, tower.gridRow, false);
+    const spot = this.buildSpots[tower.spotIndex];
+    if (spot) {
+      spot.occupied = false;
+      this.buildSpotObjects[tower.spotIndex].setVisible(true);
+    }
     this.towers = this.towers.filter(t => t !== tower);
     tower.destroy();
+    this.clearRange();
     this.updateHUD();
+  }
+
+  public castLightningSpell(x: number, y: number): void {
+    SoundSynthesizer.getInstance().playLightningStrike();
+
+    // Find all enemies within 120px radius of click
+    const hitEnemies = this.enemies.filter(
+      e => e.active && !e.isDead && Phaser.Math.Distance.Between(x, y, e.x, e.y) <= 130
+    );
+
+    const chainPoints = hitEnemies.map(e => ({ x: e.x, y: e.y }));
+    this.juiceManager.drawLightningStrike(x, 0, x, y, chainPoints);
+    this.juiceManager.shakeCamera(0.015, 200);
+
+    hitEnemies.forEach(e => {
+      e.takeDamage(120, true, this.juiceManager);
+    });
+  }
+
+  public showRange(x: number, y: number, range: number): void {
+    this.rangeGraphics.clear();
+    this.rangeGraphics.fillStyle(0x38bdf8, 0.12);
+    this.rangeGraphics.fillCircle(x, y, range);
+    this.rangeGraphics.lineStyle(2, 0x0284c7, 0.8);
+    this.rangeGraphics.strokeCircle(x, y, range);
+  }
+
+  public clearRange(): void {
+    this.rangeGraphics.clear();
   }
 
   public startNextWave(): void {
     if (this.waveManager.isWaveInProgress) {
-      // Early call bonus!
-      this.addGold(35);
+      this.addGold(30);
       SoundSynthesizer.getInstance().playCoin();
-      this.juiceManager.showFloatingGold(this.scale.width / 2, 100, 35);
+      this.juiceManager.showFloatingGold(this.scale.width / 2, 80, 30);
     }
     this.waveManager.startNextWave();
     this.updateHUD();
@@ -269,10 +444,9 @@ export class GameScene extends Phaser.Scene {
     if (this.isGameOver) return;
     this.isGameOver = true;
 
-    // Calculate star rating based on remaining base lives
     let stars = 1;
     if (this.lives >= this.mapData.startLives) {
-      stars = 3; // Flawless defense!
+      stars = 3;
     } else if (this.lives >= this.mapData.startLives * 0.5) {
       stars = 2;
     }
@@ -330,10 +504,8 @@ export class GameScene extends Phaser.Scene {
   public update(time: number, delta: number): void {
     if (this.isPaused || this.isGameOver) return;
 
-    // 1. Update Wave Spawning
     this.waveManager.update(delta, this.enemies);
 
-    // 2. Update Active Enemies
     for (let i = 0; i < this.enemies.length; i++) {
       const e = this.enemies[i];
       if (e.active && !e.isDead) {
@@ -341,20 +513,13 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 3. Update Towers Firing & Target Acquisition
     for (let i = 0; i < this.towers.length; i++) {
-      this.towers[i].updateTower(time, this.enemies, this.bulletPool, this.missilePool, this.juiceManager);
+      this.towers[i].updateTower(time, this.enemies, this.projectilePool, this.juiceManager);
     }
 
-    // 4. Update Projectiles
-    for (let i = 0; i < this.bulletPool.length; i++) {
-      const b = this.bulletPool[i];
-      if (b.active) b.update(time, delta);
-    }
-
-    for (let i = 0; i < this.missilePool.length; i++) {
-      const m = this.missilePool[i];
-      if (m.active) m.update(time, delta);
+    for (let i = 0; i < this.projectilePool.length; i++) {
+      const p = this.projectilePool[i];
+      if (p.active) p.update(time, delta);
     }
   }
 }

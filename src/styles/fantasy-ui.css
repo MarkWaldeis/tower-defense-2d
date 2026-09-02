@@ -1,0 +1,520 @@
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", sans-serif;
+  --font-title: "Inter", "Segoe UI", sans-serif;
+
+  /* Kingdom Rush Frontiers Colors */
+  --c-parchment: #fef3c7;
+  --c-parchment-dark: #fde68a;
+  --c-wood-dark: #451a03;
+  --c-wood-mid: #78350f;
+  --c-wood-light: #92400e;
+  --c-gold: #facc15;
+  --c-gold-dark: #ca8a04;
+  --c-red-banner: #b91c1c;
+  --c-red-dark: #7f1d1d;
+  --c-green-btn: #16a34a;
+  --c-blue-spell: #0284c7;
+
+  --wood-border: 2px solid #78350f;
+  --wood-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #2e1a0d;
+  font-family: var(--font-family);
+  color: #ffffff;
+  position: fixed;
+}
+
+#app-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#game-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#game-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+
+/* ==================== HUD OVERLAY ==================== */
+.hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  transition: opacity 0.3s ease;
+}
+
+.hud-overlay.hidden {
+  opacity: 0;
+  pointer-events: none !important;
+}
+
+.hud-overlay * {
+  pointer-events: auto;
+}
+
+/* Kingdom Rush Top Wooden Bar */
+.fantasy-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--c-wood-dark);
+  border: 3px solid var(--c-wood-light);
+  box-shadow: var(--wood-shadow);
+  border-radius: 999px;
+  padding: 6px 18px;
+  max-width: 980px;
+  margin: 0 auto;
+  width: calc(100% - 24px);
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.gold-badge .value {
+  color: var(--c-gold);
+}
+
+.lives-badge .value {
+  color: #ef4444;
+}
+
+.wave-badge .value {
+  color: #38bdf8;
+}
+
+.top-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.wood-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--c-wood-mid);
+  border: 2px solid var(--c-gold-dark);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 13px;
+  transition: transform 0.15s ease;
+}
+
+.wood-icon-btn:hover {
+  transform: translateY(-2px);
+  background: var(--c-wood-light);
+}
+
+/* Spells Drawer (Left side: Kettenblitz & Meteor) */
+.spells-drawer {
+  position: absolute;
+  left: 20px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 15;
+}
+
+.spell-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--c-wood-dark);
+  border: 3px solid var(--c-gold-dark);
+  box-shadow: var(--wood-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  position: relative;
+}
+
+.spell-btn:hover {
+  transform: scale(1.08);
+  border-color: #00f2ff;
+  box-shadow: 0 0 16px rgba(0, 242, 255, 0.6);
+}
+
+.spell-btn.active {
+  border-color: #00f2ff;
+  box-shadow: 0 0 20px #00f2ff;
+  animation: spellPulse 1s infinite alternate;
+}
+
+.spell-icon {
+  font-size: 24px;
+}
+
+.spell-name {
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--c-parchment);
+  text-transform: uppercase;
+}
+
+@keyframes spellPulse {
+  from { transform: scale(1.04); }
+  to { transform: scale(1.12); }
+}
+
+/* Wave Horn / Next Wave Button (Right bottom) */
+.wave-caller-container {
+  position: absolute;
+  right: 20px;
+  bottom: 24px;
+  z-index: 15;
+}
+
+.btn-wave-horn {
+  min-width: 140px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--c-red-banner), var(--c-red-dark));
+  border: 3px solid var(--c-gold);
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(185, 28, 28, 0.6);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px 16px;
+}
+
+.btn-wave-horn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 25px rgba(234, 179, 8, 0.5);
+}
+
+.horn-title {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.horn-bonus {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-gold);
+}
+
+/* Radial / Popup Tower Build Menu (Opens over clicked stone spot) */
+.radial-build-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 12px;
+  background: var(--c-wood-dark);
+  border: 3px solid var(--c-gold-dark);
+  border-radius: 24px;
+  padding: 12px;
+  box-shadow: var(--wood-shadow);
+  z-index: 25;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radial-build-menu.hidden {
+  display: none;
+}
+
+.tower-card {
+  width: 80px;
+  height: 90px;
+  background: var(--c-parchment);
+  border: 2px solid var(--c-wood-mid);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--c-wood-dark);
+}
+
+.tower-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--c-red-banner);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.tower-card.disabled {
+  opacity: 0.45;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+
+.tc-icon {
+  font-size: 24px;
+}
+
+.tc-name {
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.tc-cost {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--c-wood-light);
+}
+
+/* Tower Inspector Card (Kingdom Rush Parchment) */
+.tower-inspect-card {
+  position: absolute;
+  right: 20px;
+  top: 70px;
+  width: 290px;
+  background: var(--c-parchment);
+  border: 3px solid var(--c-wood-dark);
+  border-radius: 18px;
+  padding: 14px;
+  color: var(--c-wood-dark);
+  box-shadow: var(--wood-shadow);
+  z-index: 20;
+  animation: slideInRight 0.25s ease;
+}
+
+.tower-inspect-card.hidden {
+  display: none;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid var(--c-wood-mid);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.tower-avatar {
+  font-size: 26px;
+}
+
+.tower-name {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.tower-lvl {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--c-red-banner);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--c-wood-dark);
+  cursor: pointer;
+}
+
+.card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.stat-item {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+}
+
+.targeting-bar {
+  margin-bottom: 12px;
+}
+
+.target-btns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.target-btn {
+  background: var(--c-parchment-dark);
+  border: 1px solid var(--c-wood-mid);
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.target-btn.active {
+  background: var(--c-wood-dark);
+  color: var(--c-gold);
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 8px;
+}
+
+.fantasy-btn {
+  border-radius: 10px;
+  border: 2px solid var(--c-wood-dark);
+  padding: 8px;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.btn-upg {
+  background: var(--c-green-btn);
+  color: #fff;
+}
+
+.btn-sell {
+  background: var(--c-red-banner);
+  color: #fff;
+}
+
+/* Modal Popup */
+.game-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.game-modal.hidden {
+  display: none;
+}
+
+.modal-box {
+  width: 90%;
+  max-width: 400px;
+  background: var(--c-parchment);
+  border: 4px solid var(--c-wood-dark);
+  border-radius: 24px;
+  padding: 24px;
+  text-align: center;
+  color: var(--c-wood-dark);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.modal-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--c-red-banner);
+  margin-bottom: 6px;
+}
+
+.modal-stars {
+  font-size: 32px;
+  color: var(--c-gold-dark);
+  margin: 12px 0;
+}
+
+.modal-btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modal-btn-row button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid var(--c-wood-dark);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.btn-p {
+  background: var(--c-green-btn);
+  color: #fff;
+}
+
+.btn-s {
+  background: var(--c-wood-mid);
+  color: #fff;
+}
+
+@keyframes popIn {
+  from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}

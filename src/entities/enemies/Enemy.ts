@@ -15,15 +15,10 @@ export class Enemy extends Phaser.GameObjects.Container {
   public hasReachedBase: boolean = false;
   public totalDistanceTraveled: number = 0;
 
-  // Debuffs
-  private slowFactor: number = 1.0;
-  private slowTimer: number = 0;
-
   // Visuals
-  private bodySprite: Phaser.GameObjects.Sprite;
+  private sprite: Phaser.GameObjects.Sprite;
   private healthBarBg: Phaser.GameObjects.Graphics;
   private healthBarFill: Phaser.GameObjects.Graphics;
-  private slowAura: Phaser.GameObjects.Arc;
 
   private onDeathCallback?: (enemy: Enemy) => void;
   private onReachBaseCallback?: (enemy: Enemy) => void;
@@ -42,16 +37,11 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.currentHp = this.maxHp;
     this.waypoints = waypoints;
 
-    // 1. Slow aura indicator
-    this.slowAura = scene.add.circle(0, 0, this.stats.size + 4, 0x00f2ff, 0.35);
-    this.slowAura.setVisible(false);
-    this.add(this.slowAura);
+    // Sprite
+    this.sprite = scene.add.sprite(0, 0, `enemy_${type.toLowerCase()}`);
+    this.add(this.sprite);
 
-    // 2. Body Sprite
-    this.bodySprite = scene.add.sprite(0, 0, `enemy_${type.toLowerCase()}`);
-    this.add(this.bodySprite);
-
-    // 3. Health bar graphics
+    // Health bar
     this.healthBarBg = scene.add.graphics();
     this.healthBarFill = scene.add.graphics();
     this.add(this.healthBarBg);
@@ -60,38 +50,52 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.updateHealthBar();
 
     scene.add.existing(this);
-    this.setDepth(5);
+    this.setDepth(10);
+
+    // Walking wobble animation
+    scene.tweens.add({
+      targets: this.sprite,
+      angle: { from: -4, to: 4 },
+      duration: 200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
   }
 
   public setCallbacks(
     onDeath: (enemy: Enemy) => void,
     onReachBase: (enemy: Enemy) => void
-  ) {
+  ): void {
     this.onDeathCallback = onDeath;
     this.onReachBaseCallback = onReachBase;
   }
 
-  public takeDamage(amount: number, isArmorPiercing: boolean = false, juice?: JuiceManager): void {
+  public takeDamage(amount: number, ignoresArmor: boolean = false, juice?: JuiceManager): void {
     if (this.isDead || this.hasReachedBase) return;
 
-    // Armor calculation
     let effectiveDamage = amount;
-    if (!isArmorPiercing && this.stats.armor > 0) {
+    if (!ignoresArmor && this.stats.armor > 0) {
       effectiveDamage = Math.max(1, amount - this.stats.armor);
     }
 
     this.currentHp -= effectiveDamage;
 
-    // Floating text
     if (juice) {
-      juice.showFloatingDamage(this.x, this.y, effectiveDamage, isArmorPiercing ? '#00f2ff' : '#ffffff');
+      juice.showFloatingDamage(
+        this.x,
+        this.y,
+        effectiveDamage,
+        ignoresArmor ? '#c084fc' : '#ffffff',
+        effectiveDamage > 35
+      );
     }
 
-    // Hit flash
-    this.bodySprite.setTint(0xffffff);
-    this.scene.time.delayedCall(70, () => {
+    // Flash white on hit
+    this.sprite.setTint(0xffffff);
+    this.scene.time.delayedCall(60, () => {
       if (this.active && !this.isDead) {
-        this.bodySprite.clearTint();
+        this.sprite.clearTint();
       }
     });
 
@@ -102,58 +106,43 @@ export class Enemy extends Phaser.GameObjects.Container {
     }
   }
 
-  public applySlow(factor: number = 0.5, durationSeconds: number = 3): void {
-    this.slowFactor = factor;
-    this.slowTimer = durationSeconds * 1000;
-    this.slowAura.setVisible(true);
-  }
-
   private updateHealthBar(): void {
     this.healthBarBg.clear();
     this.healthBarFill.clear();
 
-    if (this.currentHp >= this.maxHp) {
-      return; // Full HP, hide bar
-    }
+    if (this.currentHp >= this.maxHp) return;
 
-    const barWidth = Math.max(28, this.stats.size * 1.6);
-    const barHeight = 4;
+    const barW = Math.max(28, this.stats.size * 1.5);
+    const barH = 4;
     const barY = -this.stats.size - 8;
 
-    this.healthBarBg.fillStyle(0x000000, 0.7);
-    this.healthBarBg.fillRoundedRect(-barWidth / 2, barY, barWidth, barHeight, 2);
+    this.healthBarBg.fillStyle(0x000000, 0.75);
+    this.healthBarBg.fillRoundedRect(-barW / 2, barY, barW, barH, 2);
 
-    const hpPercent = Math.max(0, this.currentHp / this.maxHp);
-    const fillColor = hpPercent > 0.5 ? 0x32d74b : hpPercent > 0.25 ? 0xff9f0a : 0xff453a;
+    const pct = Math.max(0, this.currentHp / this.maxHp);
+    const color = pct > 0.5 ? 0x22c55e : pct > 0.25 ? 0xeab308 : 0xef4444;
 
-    this.healthBarFill.fillStyle(fillColor, 1);
-    this.healthBarFill.fillRoundedRect(-barWidth / 2, barY, barWidth * hpPercent, barHeight, 2);
+    this.healthBarFill.fillStyle(color, 1);
+    this.healthBarFill.fillRoundedRect(-barW / 2, barY, barW * pct, barH, 2);
   }
 
   public update(_time: number, delta: number): void {
     if (this.isDead || this.hasReachedBase) return;
 
-    // Handle Slow timer
-    if (this.slowTimer > 0) {
-      this.slowTimer -= delta;
-      if (this.slowTimer <= 0) {
-        this.slowFactor = 1.0;
-        this.slowAura.setVisible(false);
-      }
-    }
-
-    // Waypoint movement
     if (this.waypointIndex < this.waypoints.length) {
       const target = this.waypoints[this.waypointIndex];
       const dx = target.x - this.x;
       const dy = target.y - this.y;
       const dist = Math.hypot(dx, dy);
 
-      // Rotate towards movement direction
-      const angle = Math.atan2(dy, dx);
-      this.bodySprite.setRotation(angle);
+      // Flip sprite based on movement direction
+      if (dx < 0) {
+        this.sprite.setFlipX(true);
+      } else if (dx > 0) {
+        this.sprite.setFlipX(false);
+      }
 
-      const speed = this.stats.speed * this.slowFactor;
+      const speed = this.stats.speed;
       const step = (speed * delta) / 1000;
 
       if (dist <= step) {
@@ -189,10 +178,10 @@ export class Enemy extends Phaser.GameObjects.Container {
     SoundSynthesizer.getInstance().playExplosion(this.stats.isBoss);
 
     if (juice) {
-      juice.explode(this.x, this.y, this.stats.color, this.stats.isBoss ? 35 : 12, this.stats.isBoss ? 2 : 1);
+      juice.explode(this.x, this.y, this.stats.color, this.stats.isBoss ? 30 : 12, this.stats.isBoss ? 1.8 : 1);
       juice.showFloatingGold(this.x, this.y, this.stats.goldReward);
       if (this.stats.isBoss) {
-        juice.shakeCamera(0.02, 300);
+        juice.shakeCamera(0.018, 250);
         juice.hitStop(80);
       }
     }

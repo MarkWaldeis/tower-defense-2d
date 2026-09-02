@@ -1,8 +1,8 @@
-export type TowerType = 'GATLING' | 'LASER' | 'ROCKET' | 'CRYO' | 'TESLA';
+export type TowerType = 'SLINGER' | 'CROSSBOW' | 'MAGE' | 'MORTAR';
 
 export type TargetingMode = 'FIRST' | 'LAST' | 'STRONGEST' | 'WEAKEST' | 'CLOSEST';
 
-export type EnemyType = 'SCOUT' | 'RAIDER' | 'TANK' | 'BOSS' | 'SHIELD_DRONE';
+export type EnemyType = 'GOBLIN' | 'SCUTTER' | 'GOLEM' | 'VULTURE' | 'SORCERER';
 
 export interface TowerStats {
   id: TowerType;
@@ -13,7 +13,7 @@ export interface TowerStats {
   range: number;
   fireRate: number; // Attacks per second
   description: string;
-  special?: string;
+  special: string;
   upgradeCostMult: number;
   damageMultPerLevel: number;
   rangeMultPerLevel: number;
@@ -23,8 +23,9 @@ export interface EnemyStats {
   id: EnemyType;
   name: string;
   hp: number;
-  speed: number; // Pixels per second
+  speed: number;
   armor: number; // Flat or % damage reduction
+  magicResist: number;
   goldReward: number;
   scoreReward: number;
   size: number;
@@ -38,28 +39,21 @@ export interface Point {
   y: number;
 }
 
-export interface GridCoord {
-  col: number;
-  row: number;
-}
-
-export enum TileType {
-  BUILDABLE = 0,
-  PATH = 1,
-  OBSTACLE = 2,
-  SPAWN = 3,
-  BASE = 4
+export interface BuildSpot {
+  id: number;
+  x: number;
+  y: number;
+  occupied: boolean;
+  towerId?: string;
 }
 
 export interface MapData {
   id: number;
   name: string;
-  subtitle: string;
-  cols: number;
-  rows: number;
-  tileSize: number;
-  tiles: number[][];
+  region: string;
+  description: string;
   waypoints: Point[];
+  buildSpots: Point[];
   startGold: number;
   startLives: number;
   totalWaves: number;
@@ -68,8 +62,8 @@ export interface MapData {
 export interface WaveUnitConfig {
   type: EnemyType;
   count: number;
-  interval: number; // ms between spawns
-  delayBefore: number; // ms before this group starts
+  interval: number;
+  delayBefore: number;
 }
 
 export interface WaveConfig {
@@ -91,4 +85,5 @@ export interface GameSaveState {
   soundEnabled: boolean;
   totalKills: number;
   totalGoldEarned: number;
+  starsCount: number;
 }

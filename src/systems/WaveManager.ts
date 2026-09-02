@@ -68,7 +68,7 @@ export class WaveManager {
 
     this.spawnQueue.sort((a, b) => a.spawnTime - b.spawnTime);
 
-    SoundSynthesizer.getInstance().playWaveStart();
+    SoundSynthesizer.getInstance().playWaveHorn();
 
     if (this.onWaveStartCallback) {
       this.onWaveStartCallback(wave.waveNumber, !!wave.isBossWave);

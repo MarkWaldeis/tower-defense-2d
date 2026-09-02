@@ -1,99 +1,63 @@
-# 🛡️ Tower Defense 2D — Mobile & Web Strategy
+# 🏰 Kingdom Frontiers — 2D Mobile Tower Defense
 
-Ein modernes, taktisches 2D Tower Defense Spiel, von Grund auf optimiert für Mobilgeräte (iOS & Android) und Web-Browser. Ausgestattet mit einem **Apple "Liquid Glass" Glassmorphism HUD**, 5 ausbalancierten Turmtypen, FSM-Gegnerlogik, partikelreichem Game Juice, prozeduralem WebAudio-Synthesizer und CI/CD GitHub Pages Deployment.
+Ein handgezeichnetes 2D Fantasy Tower Defense Spiel im **Kingdom Rush Frontiers** Stil, optimiert für Mobilgeräte (iOS & Android) und Web-Browser.
 
 🎮 **Direkt im Browser spielen:** [https://markwaldeis.github.io/tower-defense-2d/](https://markwaldeis.github.io/tower-defense-2d/)
 
 ---
 
-## 📱 Highlights & Mobile-First Features
-
-- **Apple Liquid Glass HUD:** Elegante, milchige Glas-Overlays (`backdrop-filter: blur`), Neon-Indikatoren und taktile Touch-Elemente.
-- **Mobile Touch-Bedienung:** Intuitive Turm-Platzierung per Tap, Reichweiten-Kreise mit Live-Highlight, Safe-Area-Handling für iPhone-Notches & Android-Statusleisten.
-- **5 Spezialisierte Türme:**
-  - 🔫 **Gatling-Geschütz:** Schnellfeuer gegen Schwärme & schnelle Aufklärer.
-  - ⚡ **Plasma-Laser:** Kontinuierlicher Hochenergiestrahl mit Rüstungsdurchdringung.
-  - 🚀 **Raketen-Silo:** Flächenschaden (AoE) mit Zielsuchlenkung.
-  - ❄️ **Kryo-Emitter:** Verlangsamt Feinde im Umkreis um 50%.
-  - 🔮 **Tesla-Spule:** Kettenblitz springt auf bis zu 4 nahe Feinde über.
-- **5 Targeting-Modi:** `ERSTER`, `LETZTER`, `STÄRKSTER`, `SCHWÄCHSTER`, `NÄCHSTER` pro Turm umschaltbar.
-- **Multi-Tier Upgrade-System:** 3 Ausbaustufen (MK-I, MK-II, MK-III) mit Schadens- und Reichweiten-Boni sowie Rückerstattung beim Verkauf.
-- **High-Performance Object-Pooling:** Null Garbage-Collection-Stottern durch Voraballokation von Kugeln, Raketen und Partikeln.
-- **Prozeduraler WebAudio-Synthesizer:** Satter Sound für Laser, Explosionen, Klicks und Synth-BGM direkt über die Web Audio API – ohne externe Asset-Ladefehler.
-- **Speicher-System:** Auto-Save im LocalStorage für Level-Fortschritte, 3-Sterne-Bewertungen, Highscores und Statistiken.
+## 🗺️ Kampagnen-Weltkarte (Overworld Map)
+- **Interaktive Wüsten-Weltkarte:** Al-Kharid Wüstenkontinent mit Sanddünen, Gebirgskämmen, Oasen, Ruinen und Sonnenpyramiden.
+- **Level-Pfade & Fahnen:** Gestrichelte Pfadverbindungen zu Stufe 1 ("Sonnental-Ruinen & Oase"), Stufe 2 ("Knochen-Canyon") und Stufe 3 ("Sonnen-Pyramide").
+- **3-Sterne-System & Highscores:** Übersicht aller gesammelten Sterne und Rekorde pro Sektor.
 
 ---
 
-## 🛠️ Tech Stack & Architektur
-
-```
-tower-defense-2d/
-├── .github/workflows/deploy.yml     # Automatisches GitHub Pages Deployment
-├── public/
-│   ├── favicon.svg                  # App-Icon & Vektor-Favicon
-│   └── manifest.json                # PWA-Manifest für Homescreen-Installation
-├── src/
-│   ├── audio/SoundSynthesizer.ts    # Reiner WebAudio SFX & BGM Generator
-│   ├── config/GameConfig.ts         # Balance-Werte, Maps, Turm- & Gegner-Stats
-│   ├── entities/
-│   │   ├── towers/Tower.ts          # Turm-Container, Waffensysteme & Targeting
-│   │   ├── enemies/Enemy.ts         # Gegner-Wegpunkt-Navigation & Rüstung
-│   │   └── projectiles/             # Bullet-, Raketen- & Laser-Pooling
-│   ├── scenes/
-│   │   ├── BootScene.ts             # Prozedurale HD-Vektortexturen-Generierung
-│   │   ├── MainMenuScene.ts         # Animiertes Cyber-Hauptmenü
-│   │   ├── LevelSelectScene.ts      # Missions-Auswahl mit Sternen-Status
-│   │   ├── GameScene.ts             # Hauptspielschleife, Grid & Kamera
-│   │   └── UIScene.ts               # Apple Glass HUD & Steuerungs-Events
-│   ├── systems/
-│   │   ├── GridManager.ts           # Kachelgitter, Pfade & Baufelder
-│   │   ├── WaveManager.ts           # Wellen-Orchestrierung & Boss-Warnung
-│   │   ├── JuiceManager.ts          # Floating Numbers, Screen Shake & FX
-│   │   └── SaveManager.ts           # LocalStorage Persistenz
-│   ├── styles/glass-ui.css          # Liquid Glass Design Tokens & Media Queries
-│   └── main.ts                      # Phaser Game Initialisierung & Resize-Listener
-├── capacitor.config.ts              # iOS / Android Native Wrapper Config
-└── vite.config.ts                   # Vite Bundler Konfiguration
-```
+## 🏜️ Stufe 1: Sonnental-Ruinen & Oase
+- **Handgezeichnetes Terrain:**
+  * Sandstein-Schlucht mit antiken römischen Tempeln ("Tempel der Sonne", "Ruinen von Ra").
+  * Schimmernde Wasser-Oase im Zentrum mit Palmen und Kakteen.
+  * Gewundener Wüstenpfad mit Spawn-Höhle und Festungs-Ausgang.
+- **Feste Turm-Fundamente:**
+  * 9 strategisch platzierte Stein-Plinthen entlang des Chokepoints.
+  * Klick auf ein Fundament öffnet das Radial-Baumenü für die 4 Fantasy-Türme.
 
 ---
 
-## 🚀 Lokale Entwicklung
+## 🏹 4 Legendäre Turm-Klassen
+1. **🏹 Steinschleuder-Wachturm (Basic Slinger / Archer):** Hölzerner Ausguck mit schnellen Schleudersteinen und Pfeilen.
+2. **⚔️ Armbrust-Bastion (Crossbow Emplacement):** Verstärkte Stein-Festung mit schweren durchschlagenden Bolzen.
+3. **🔮 Runen-Magier (Rune Mage):** Arkaner Altar mit magischen Energiebällen (ignoriert physische Rüstung).
+4. **🐉 Drachen-Mörser (Heavy Dragon Mortar):** Schwere Drachenmaul-Artillerie mit riesigem Flächenschaden (AoE).
 
-### 1. Abhängigkeiten installieren
-```bash
-npm install
-```
+---
 
-### 2. Entwicklungsserver starten
+## ⚡ Spezialfähigkeiten & Spells
+- ⚡ **Kettenblitz:** Klicke auf das Blitz-Icon und tippe auf einen beliebigen Punkt auf der Karte, um Feinde mit vernichtenden Elektro-Bögen zu zerschlagen.
+
+---
+
+## 👹 Wüstenkreaturen & Bosse
+- 👺 **Sand-Goblin:** Flinker Wüstenräuber mit Spitzhacke.
+- 🦂 **Riesen-Dünenskorpion:** Gepanzerter Chitin-Krabbler.
+- 🗿 **Antiker Stein-Golem:** Massiver Ruinen-Koloss mit hoher Rüstung.
+- 🦅 **Geier-Reiter:** Schnelle Späher aus der Luft.
+- 🧙‍♂️ **Wüsten-Zauberer:** Arkaner Endboss der Wüste.
+
+---
+
+## 🛠️ Lokale Entwicklung & Export
+
 ```bash
+# Entwicklungsserver starten
 npm run dev
-```
-Öffnet automatisch `http://localhost:3000` im Browser.
 
-### 3. Produktions-Build erstellen
-```bash
+# Produktions-Build erstellen
 npm run build
-```
 
----
-
-## 📲 Export für iOS & Android (Capacitor)
-
-Das Projekt ist für den nativen Export über **Capacitor** vorkonfiguriert:
-
-### Android Studio Build
-```bash
-npm run build
+# Android App starten (Capacitor)
 npx cap add android
 npx cap open android
-```
-
-### iOS Xcode Build (macOS)
-```bash
-npm run build
-npx cap add ios
-npx cap open ios
 ```
 
 ---

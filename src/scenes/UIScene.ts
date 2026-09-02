@@ -7,7 +7,7 @@ import { Tower } from '../entities/towers/Tower';
 
 export class UIScene extends Phaser.Scene {
   private gameScene!: GameScene;
-  private selectedBuildType: TowerType | null = null;
+  private selectedSpotIndex: number | null = null;
   private selectedTower: Tower | null = null;
 
   constructor() {
@@ -24,8 +24,9 @@ export class UIScene extends Phaser.Scene {
     if (hud) hud.classList.remove('hidden');
 
     this.bindTopBarEvents();
-    this.renderTowerBuildDrawer();
+    this.bindRadialBuildEvents();
     this.bindInspectCardEvents();
+    this.bindSpellEvents();
     this.bindWaveButtonEvents();
     this.bindModalEvents();
   }
@@ -36,7 +37,7 @@ export class UIScene extends Phaser.Scene {
     const btnPause = document.getElementById('btn-pause');
     const btnSound = document.getElementById('btn-sound');
     const btnSoundIcon = document.getElementById('btn-sound-icon');
-    const btnFullscreen = document.getElementById('btn-fullscreen');
+    const btnBackMap = document.getElementById('btn-back-map');
 
     if (btnSpeed && btnSpeedLabel) {
       btnSpeed.onclick = () => {
@@ -64,119 +65,96 @@ export class UIScene extends Phaser.Scene {
       };
     }
 
-    if (btnFullscreen) {
-      btnFullscreen.onclick = () => {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
+    if (btnBackMap) {
+      btnBackMap.onclick = () => {
+        SoundSynthesizer.getInstance().playUiClick();
+        const hud = document.getElementById('hud-overlay');
+        if (hud) hud.classList.add('hidden');
+        this.gameScene.scene.stop('GameScene');
+        this.scene.stop('UIScene');
+        this.gameScene.scene.start('WorldMapScene');
+      };
+    }
+  }
+
+  private bindRadialBuildEvents(): void {
+    const cards = document.querySelectorAll('.tower-card');
+    cards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        const target = (e.currentTarget as HTMLElement);
+        const type = target.getAttribute('data-type') as TowerType;
+        if (type && this.selectedSpotIndex !== null) {
+          const success = this.gameScene.buildTowerOnSpot(this.selectedSpotIndex, type);
+          if (success) {
+            this.closeBuildMenu();
+          }
+        }
+      });
+    });
+  }
+
+  public openBuildMenuForSpot(spotIndex: number, screenX: number, screenY: number): void {
+    this.selectedSpotIndex = spotIndex;
+    this.closeInspectCard();
+
+    const menu = document.getElementById('radial-build-menu');
+    if (!menu) return;
+
+    // Position menu near the spot or centered
+    menu.style.left = `${Math.min(Math.max(screenX, 180), window.innerWidth - 180)}px`;
+    menu.style.top = `${Math.min(Math.max(screenY, 120), window.innerHeight - 120)}px`;
+    menu.classList.remove('hidden');
+
+    this.updateBuildMenuCards();
+  }
+
+  public closeBuildMenu(): void {
+    this.selectedSpotIndex = null;
+    const menu = document.getElementById('radial-build-menu');
+    if (menu) menu.classList.add('hidden');
+    this.gameScene.clearRange();
+  }
+
+  private updateBuildMenuCards(): void {
+    const gold = this.gameScene.gold;
+    const cards = document.querySelectorAll('.tower-card');
+    cards.forEach(card => {
+      const type = (card as HTMLElement).getAttribute('data-type') as TowerType;
+      if (type) {
+        const cost = TOWERS_CONFIG[type].cost;
+        if (gold < cost) {
+          card.classList.add('disabled');
         } else {
-          document.exitFullscreen().catch(() => {});
+          card.classList.remove('disabled');
+        }
+      }
+    });
+  }
+
+  private bindSpellEvents(): void {
+    const btnLightning = document.getElementById('btn-spell-lightning');
+    if (btnLightning) {
+      btnLightning.onclick = () => {
+        SoundSynthesizer.getInstance().playUiClick();
+        if (this.gameScene.activeSpell === 'LIGHTNING') {
+          this.clearSpellSelection();
+        } else {
+          this.gameScene.activeSpell = 'LIGHTNING';
+          btnLightning.classList.add('active');
         }
       };
     }
   }
 
-  private renderTowerBuildDrawer(): void {
-    const container = document.getElementById('tower-build-list');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const towerTypes: TowerType[] = ['GATLING', 'LASER', 'ROCKET', 'CRYO', 'TESLA'];
-
-    towerTypes.forEach(type => {
-      const config = TOWERS_CONFIG[type];
-      const card = document.createElement('div');
-      card.className = 'tower-build-card';
-      card.id = `build-card-${type}`;
-      card.innerHTML = `
-        <span class="tbc-icon">${config.icon}</span>
-        <span class="tbc-name">${config.name.split(' ')[0]}</span>
-        <span class="tbc-cost">🪙 ${config.cost}</span>
-      `;
-
-      card.onclick = () => {
-        SoundSynthesizer.getInstance().playUiClick();
-        this.selectBuildTower(type);
-      };
-
-      container.appendChild(card);
-    });
-  }
-
-  public selectBuildTower(type: TowerType | null): void {
-    if (this.selectedBuildType === type) {
-      // Toggle off
-      this.selectedBuildType = null;
-      this.gameScene.setBuildMode(null);
-    } else {
-      this.selectedBuildType = type;
-      this.gameScene.setBuildMode(type);
-      this.closeInspectCard();
-    }
-    this.updateBuildCardsState();
-  }
-
-  public updateBuildCardsState(): void {
-    const gold = this.gameScene.gold;
-    const towerTypes: TowerType[] = ['GATLING', 'LASER', 'ROCKET', 'CRYO', 'TESLA'];
-
-    towerTypes.forEach(type => {
-      const card = document.getElementById(`build-card-${type}`);
-      if (!card) return;
-
-      const cost = TOWERS_CONFIG[type].cost;
-      const canAfford = gold >= cost;
-
-      if (!canAfford) {
-        card.classList.add('disabled');
-      } else {
-        card.classList.remove('disabled');
-      }
-
-      if (this.selectedBuildType === type) {
-        card.classList.add('selected');
-      } else {
-        card.classList.remove('selected');
-      }
-    });
-  }
-
-  public updateStats(gold: number, lives: number, wave: number, totalWaves: number, score: number): void {
-    const goldEl = document.getElementById('hud-gold-text');
-    const livesEl = document.getElementById('hud-lives-text');
-    const waveEl = document.getElementById('hud-wave-text');
-    const scoreEl = document.getElementById('hud-score-text');
-
-    if (goldEl) goldEl.innerText = `${gold}`;
-    if (livesEl) livesEl.innerText = `${lives}`;
-    if (waveEl) waveEl.innerText = `${wave} / ${totalWaves}`;
-    if (scoreEl) scoreEl.innerText = `${score}`;
-
-    this.updateBuildCardsState();
-    if (this.selectedTower) {
-      this.updateInspectCardStats();
-    }
-  }
-
-  public showWaveBanner(waveNumber: number, isBoss: boolean): void {
-    const banner = document.getElementById('wave-banner');
-    const title = document.getElementById('banner-title');
-    const subtitle = document.getElementById('banner-subtitle');
-
-    if (banner && title && subtitle) {
-      title.innerText = isBoss ? `⚠️ BOSS WELLE ${waveNumber}!` : `WELLE ${waveNumber} STARTET`;
-      subtitle.innerText = isBoss ? 'Warnung: Schwerer Koloss detektiert!' : 'Feinde rücken auf der Route vor!';
-      banner.classList.remove('hidden');
-
-      setTimeout(() => {
-        banner.classList.add('hidden');
-      }, 2500);
-    }
+  public clearSpellSelection(): void {
+    this.gameScene.activeSpell = null;
+    const btnLightning = document.getElementById('btn-spell-lightning');
+    if (btnLightning) btnLightning.classList.remove('active');
   }
 
   private bindInspectCardEvents(): void {
     const closeBtn = document.getElementById('btn-close-inspect');
-    const btnUpgrade = document.getElementById('btn-upgrade-tower');
+    const btnUpg = document.getElementById('btn-upgrade-tower');
     const btnSell = document.getElementById('btn-sell-tower');
 
     if (closeBtn) {
@@ -186,19 +164,15 @@ export class UIScene extends Phaser.Scene {
       };
     }
 
-    if (btnUpgrade) {
-      btnUpgrade.onclick = () => {
+    if (btnUpg) {
+      btnUpg.onclick = () => {
         if (!this.selectedTower) return;
         const cost = this.selectedTower.getUpgradeCost();
         if (this.gameScene.gold >= cost) {
           this.gameScene.spendGold(cost);
           this.selectedTower.upgrade();
           this.updateInspectCardStats();
-          this.gameScene.gridManager.showTowerRange(
-            this.selectedTower.x,
-            this.selectedTower.y,
-            this.selectedTower.currentRange
-          );
+          this.gameScene.showRange(this.selectedTower.x, this.selectedTower.y, this.selectedTower.currentRange);
         } else {
           SoundSynthesizer.getInstance().playError();
         }
@@ -216,7 +190,6 @@ export class UIScene extends Phaser.Scene {
       };
     }
 
-    // Targeting buttons
     const targetBtns = document.querySelectorAll('.target-btn');
     targetBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -233,7 +206,7 @@ export class UIScene extends Phaser.Scene {
 
   public openInspectCard(tower: Tower): void {
     this.selectedTower = tower;
-    this.selectBuildTower(null); // Deselect build preview
+    this.closeBuildMenu();
 
     const card = document.getElementById('tower-inspect-card');
     if (!card) return;
@@ -246,7 +219,7 @@ export class UIScene extends Phaser.Scene {
     this.selectedTower = null;
     const card = document.getElementById('tower-inspect-card');
     if (card) card.classList.add('hidden');
-    this.gameScene.gridManager.clearRange();
+    this.gameScene.clearRange();
   }
 
   private updateInspectCardStats(): void {
@@ -259,31 +232,30 @@ export class UIScene extends Phaser.Scene {
     const dmg = document.getElementById('inspect-dmg');
     const range = document.getElementById('inspect-range');
     const firerate = document.getElementById('inspect-firerate');
-    const dps = document.getElementById('inspect-dps');
+    const special = document.getElementById('inspect-special');
     const upgCost = document.getElementById('inspect-upgrade-cost');
     const sellVal = document.getElementById('inspect-sell-value');
-    const btnUpgrade = document.getElementById('btn-upgrade-tower') as HTMLButtonElement;
+    const btnUpg = document.getElementById('btn-upgrade-tower') as HTMLButtonElement;
 
     if (avatar) avatar.innerText = t.baseStats.icon;
     if (name) name.innerText = t.baseStats.name;
-    if (lvl) lvl.innerText = `LVL ${t.level} • MK-${t.level === 1 ? 'I' : t.level === 2 ? 'II' : 'III'}`;
+    if (lvl) lvl.innerText = `STUFE ${t.level} • ${t.level === 1 ? 'BASIC' : t.level === 2 ? 'VERSTÄRKT' : 'MEISTER'}`;
     if (dmg) dmg.innerText = `${t.currentDamage}`;
-    if (range) range.innerText = `${t.currentRange}px`;
+    if (range) range.innerText = `${t.currentRange}`;
     if (firerate) firerate.innerText = `${t.currentFireRate.toFixed(1)}/s`;
-    if (dps) dps.innerText = `${Math.round(t.currentDamage * t.currentFireRate)}`;
+    if (special) special.innerText = t.baseStats.special;
 
     if (t.level >= 3) {
-      if (upgCost) upgCost.innerText = 'MAX LVL';
-      if (btnUpgrade) btnUpgrade.disabled = true;
+      if (upgCost) upgCost.innerText = 'MAX STUFE';
+      if (btnUpg) btnUpg.disabled = true;
     } else {
       const cost = t.getUpgradeCost();
       if (upgCost) upgCost.innerText = `🪙 ${cost}`;
-      if (btnUpgrade) btnUpgrade.disabled = this.gameScene.gold < cost;
+      if (btnUpg) btnUpg.disabled = this.gameScene.gold < cost;
     }
 
     if (sellVal) sellVal.innerText = `+🪙 ${t.getSellValue()}`;
 
-    // Update active target button
     document.querySelectorAll('.target-btn').forEach(btn => {
       const mode = btn.getAttribute('data-target');
       if (mode === t.targetingMode) {
@@ -298,6 +270,8 @@ export class UIScene extends Phaser.Scene {
     const btnCallWave = document.getElementById('btn-call-wave');
     if (btnCallWave) {
       btnCallWave.onclick = () => {
+        this.closeBuildMenu();
+        this.closeInspectCard();
         this.gameScene.startNextWave();
       };
     }
@@ -306,7 +280,28 @@ export class UIScene extends Phaser.Scene {
   public setWaveButtonState(inProgress: boolean): void {
     const btnText = document.getElementById('btn-call-wave-text');
     if (btnText) {
-      btnText.innerText = inProgress ? 'WELLE LÄUFT...' : 'NÄCHSTE WELLE';
+      btnText.innerText = inProgress ? 'KAMPF LÄUFT...' : 'NÄCHSTE WELLE';
+    }
+  }
+
+  public showWaveBanner(_waveNumber: number, _isBoss: boolean): void {
+    // Wave announcement
+  }
+
+  public updateStats(gold: number, lives: number, wave: number, totalWaves: number, score: number): void {
+    const goldEl = document.getElementById('hud-gold-text');
+    const livesEl = document.getElementById('hud-lives-text');
+    const waveEl = document.getElementById('hud-wave-text');
+    const scoreEl = document.getElementById('hud-score-text');
+
+    if (goldEl) goldEl.innerText = `${gold}`;
+    if (livesEl) livesEl.innerText = `${lives}`;
+    if (waveEl) waveEl.innerText = `${wave} / ${totalWaves}`;
+    if (scoreEl) scoreEl.innerText = `${score}`;
+
+    this.updateBuildMenuCards();
+    if (this.selectedTower) {
+      this.updateInspectCardStats();
     }
   }
 
@@ -328,47 +323,42 @@ export class UIScene extends Phaser.Scene {
         this.hideModal();
         const hud = document.getElementById('hud-overlay');
         if (hud) hud.classList.add('hidden');
-        this.gameScene.scene.start('MainMenuScene');
+        this.gameScene.scene.stop('GameScene');
+        this.scene.stop('UIScene');
+        this.gameScene.scene.start('WorldMapScene');
       };
     }
   }
 
-  public showVictoryModal(score: number, kills: number, lives: number, totalLives: number): void {
+  public showVictoryModal(score: number, _kills: number, lives: number, totalLives: number): void {
     const modal = document.getElementById('game-modal');
-    const badge = document.getElementById('modal-badge');
     const title = document.getElementById('modal-title');
     const desc = document.getElementById('modal-desc');
+    const stars = document.getElementById('modal-stars');
     const fScore = document.getElementById('modal-final-score');
-    const fKills = document.getElementById('modal-final-kills');
-    const fLives = document.getElementById('modal-final-lives');
 
-    if (modal && badge && title && desc && fScore && fKills && fLives) {
-      badge.innerText = '🏆';
-      title.innerText = 'SIEG! SEKTOR GESICHERT';
-      desc.innerText = 'Hervorragende taktische Leistung. Alle Wellen erfolgreich zerstört.';
+    if (modal && title && desc && stars && fScore) {
+      title.innerText = 'SIEG! OASE GESICHERT';
+      desc.innerText = 'Alle feindlichen Sand-Goblins und Golems wurden erfolgreich besiegt!';
+      const starCount = lives >= totalLives ? 3 : lives >= totalLives * 0.5 ? 2 : 1;
+      stars.innerText = starCount === 3 ? '★★★' : starCount === 2 ? '★★☆' : '★☆☆';
       fScore.innerText = `${score}`;
-      fKills.innerText = `${kills}`;
-      fLives.innerText = `${lives} / ${totalLives}`;
       modal.classList.remove('hidden');
     }
   }
 
-  public showDefeatModal(score: number, kills: number, wave: number): void {
+  public showDefeatModal(score: number, _kills: number, wave: number): void {
     const modal = document.getElementById('game-modal');
-    const badge = document.getElementById('modal-badge');
     const title = document.getElementById('modal-title');
     const desc = document.getElementById('modal-desc');
+    const stars = document.getElementById('modal-stars');
     const fScore = document.getElementById('modal-final-score');
-    const fKills = document.getElementById('modal-final-kills');
-    const fLives = document.getElementById('modal-final-lives');
 
-    if (modal && badge && title && desc && fScore && fKills && fLives) {
-      badge.innerText = '💥';
-      title.innerText = 'NIEDERLAGE: BASIS ZERSTÖRT';
-      desc.innerText = `Die Basis wurde in Welle ${wave} von den feindlichen Kräften überrannt.`;
+    if (modal && title && desc && stars && fScore) {
+      title.innerText = 'NIEDERLAGE!';
+      desc.innerText = `Die Ruinen wurden in Welle ${wave} überrannt.`;
+      stars.innerText = '☆☆☆';
       fScore.innerText = `${score}`;
-      fKills.innerText = `${kills}`;
-      fLives.innerText = `0 Leben`;
       modal.classList.remove('hidden');
     }
   }

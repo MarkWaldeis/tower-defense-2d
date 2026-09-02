@@ -1,15 +1,17 @@
 import { GameSaveState } from '../types/game';
 
-const SAVE_KEY = 'TOWER_DEFENSE_2D_SAVE_V1';
+const SAVE_KEY = 'KINGDOM_FRONTIERS_TD_V1';
 
 const DEFAULT_SAVE: GameSaveState = {
   levels: {
     1: { unlocked: true, stars: 0, highScore: 0, highestWave: 0 },
-    2: { unlocked: false, stars: 0, highScore: 0, highestWave: 0 }
+    2: { unlocked: false, stars: 0, highScore: 0, highestWave: 0 },
+    3: { unlocked: false, stars: 0, highScore: 0, highestWave: 0 }
   },
   soundEnabled: true,
   totalKills: 0,
-  totalGoldEarned: 0
+  totalGoldEarned: 0,
+  starsCount: 0
 };
 
 export class SaveManager {
@@ -51,6 +53,10 @@ export class SaveManager {
     return this.state.levels[levelId] || { unlocked: false, stars: 0, highScore: 0, highestWave: 0 };
   }
 
+  public getTotalStars(): number {
+    return Object.values(this.state.levels).reduce((sum, lvl) => sum + (lvl.stars || 0), 0);
+  }
+
   public recordVictory(levelId: number, stars: number, score: number, kills: number, gold: number): void {
     if (!this.state.levels[levelId]) {
       this.state.levels[levelId] = { unlocked: true, stars: 0, highScore: 0, highestWave: 0 };
@@ -59,7 +65,7 @@ export class SaveManager {
     current.stars = Math.max(current.stars, stars);
     current.highScore = Math.max(current.highScore, score);
 
-    // Unlock next level
+    // Unlock next campaign map stage
     const nextLevelId = levelId + 1;
     if (!this.state.levels[nextLevelId]) {
       this.state.levels[nextLevelId] = { unlocked: true, stars: 0, highScore: 0, highestWave: 0 };
@@ -69,6 +75,7 @@ export class SaveManager {
 
     this.state.totalKills += kills;
     this.state.totalGoldEarned += gold;
+    this.state.starsCount = this.getTotalStars();
     this.save();
   }
 
