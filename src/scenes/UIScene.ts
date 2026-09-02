@@ -4,6 +4,7 @@ import { TowerType, TargetingMode } from '../types/game';
 import { TOWERS_CONFIG } from '../config/GameConfig';
 import { SoundSynthesizer } from '../audio/SoundSynthesizer';
 import { Tower } from '../entities/towers/Tower';
+import { bindTap, gameToHudCoords } from '../utils/domInput';
 
 export class UIScene extends Phaser.Scene {
   private gameScene!: GameScene;
@@ -40,12 +41,10 @@ export class UIScene extends Phaser.Scene {
 
   private bindBackdropEvents(): void {
     const backdrop = document.getElementById('menu-backdrop');
-    if (backdrop) {
-      backdrop.onclick = () => {
-        this.closeBuildMenu();
-        this.closeInspectCard();
-      };
-    }
+    bindTap(backdrop, () => {
+      this.closeBuildMenu();
+      this.closeInspectCard();
+    });
   }
 
   private bindTopBarEvents(): void {
@@ -57,36 +56,36 @@ export class UIScene extends Phaser.Scene {
     const btnBackMap = document.getElementById('btn-back-map');
 
     if (btnSpeed && btnSpeedLabel) {
-      btnSpeed.onclick = () => {
+      bindTap(btnSpeed, () => {
         this.triggerHaptic(15);
         SoundSynthesizer.getInstance().playUiClick();
         const speeds = [1, 2, 3];
         const nextIdx = (speeds.indexOf(this.gameScene.gameSpeed) + 1) % speeds.length;
         this.gameScene.setGameSpeed(speeds[nextIdx]);
         btnSpeedLabel.innerText = `${speeds[nextIdx]}x`;
-      };
+      });
     }
 
     if (btnPause) {
-      btnPause.onclick = () => {
+      bindTap(btnPause, () => {
         this.triggerHaptic(20);
         SoundSynthesizer.getInstance().playUiClick();
         const isPaused = this.gameScene.togglePause();
         const icon = document.getElementById('btn-pause-icon');
         if (icon) icon.innerText = isPaused ? '▶️' : '⏸️';
-      };
+      });
     }
 
     if (btnSound && btnSoundIcon) {
-      btnSound.onclick = () => {
+      bindTap(btnSound, () => {
         this.triggerHaptic(15);
         const enabled = SoundSynthesizer.getInstance().toggle();
         btnSoundIcon.innerText = enabled ? '🔊' : '🔇';
-      };
+      });
     }
 
     if (btnBackMap) {
-      btnBackMap.onclick = () => {
+      bindTap(btnBackMap, () => {
         this.triggerHaptic(30);
         SoundSynthesizer.getInstance().playUiClick();
         const hud = document.getElementById('hud-overlay');
@@ -94,15 +93,16 @@ export class UIScene extends Phaser.Scene {
         this.gameScene.scene.stop('GameScene');
         this.scene.stop('UIScene');
         this.gameScene.scene.start('WorldMapScene');
-      };
+      });
     }
   }
 
   private bindRadialBuildEvents(): void {
     const cards = document.querySelectorAll('.tower-card');
     cards.forEach(card => {
-      card.addEventListener('click', (e) => {
-        const target = (e.currentTarget as HTMLElement);
+      bindTap(card as HTMLElement, () => {
+        const target = card as HTMLElement;
+        if (target.classList.contains('disabled')) return;
         const type = target.getAttribute('data-type') as TowerType;
         if (type && this.selectedSpotIndex !== null) {
           this.triggerHaptic(35);
@@ -115,7 +115,7 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  public openBuildMenuForSpot(spotIndex: number, screenX: number, screenY: number): void {
+  public openBuildMenuForSpot(spotIndex: number, gameX: number, gameY: number): void {
     this.selectedSpotIndex = spotIndex;
     this.closeInspectCard();
 
@@ -123,11 +123,23 @@ export class UIScene extends Phaser.Scene {
     const backdrop = document.getElementById('menu-backdrop');
     if (!menu) return;
 
-    // Smart Clamping for mobile landscape screens
-    const menuWidth = 360;
+    // Convert Phaser world coords → HUD-relative screen coords (FIT letterboxing)
+    const screen = gameToHudCoords(this.game, gameX, gameY);
+
+    const menuWidth = Math.min(360, window.innerWidth - 24);
     const menuHeight = 110;
-    const clampedX = Math.max(menuWidth / 2 + 10, Math.min(screenX, window.innerWidth - menuWidth / 2 - 10));
-    const clampedY = Math.max(menuHeight / 2 + 50, Math.min(screenY, window.innerHeight - menuHeight / 2 - 20));
+    const hud = document.getElementById('hud-overlay');
+    const boundsW = hud?.clientWidth ?? window.innerWidth;
+    const boundsH = hud?.clientHeight ?? window.innerHeight;
+
+    const clampedX = Math.max(
+      menuWidth / 2 + 8,
+      Math.min(screen.x, boundsW - menuWidth / 2 - 8)
+    );
+    const clampedY = Math.max(
+      menuHeight / 2 + 56,
+      Math.min(screen.y, boundsH - menuHeight / 2 - 16)
+    );
 
     menu.style.left = `${clampedX}px`;
     menu.style.top = `${clampedY}px`;
@@ -142,7 +154,10 @@ export class UIScene extends Phaser.Scene {
     const menu = document.getElementById('radial-build-menu');
     const backdrop = document.getElementById('menu-backdrop');
     if (menu) menu.classList.add('hidden');
-    if (backdrop) backdrop.classList.add('hidden');
+    // Only hide backdrop if inspect card is also closed
+    const inspect = document.getElementById('tower-inspect-card');
+    const inspectOpen = inspect && !inspect.classList.contains('hidden');
+    if (backdrop && !inspectOpen) backdrop.classList.add('hidden');
     this.gameScene.clearRange();
   }
 
@@ -164,18 +179,16 @@ export class UIScene extends Phaser.Scene {
 
   private bindSpellEvents(): void {
     const btnLightning = document.getElementById('btn-spell-lightning');
-    if (btnLightning) {
-      btnLightning.onclick = () => {
-        this.triggerHaptic(25);
-        SoundSynthesizer.getInstance().playUiClick();
-        if (this.gameScene.activeSpell === 'LIGHTNING') {
-          this.clearSpellSelection();
-        } else {
-          this.gameScene.activeSpell = 'LIGHTNING';
-          btnLightning.classList.add('active');
-        }
-      };
-    }
+    bindTap(btnLightning, () => {
+      this.triggerHaptic(25);
+      SoundSynthesizer.getInstance().playUiClick();
+      if (this.gameScene.activeSpell === 'LIGHTNING') {
+        this.clearSpellSelection();
+      } else {
+        this.gameScene.activeSpell = 'LIGHTNING';
+        btnLightning?.classList.add('active');
+      }
+    });
   }
 
   public clearSpellSelection(): void {
@@ -189,47 +202,42 @@ export class UIScene extends Phaser.Scene {
     const btnUpg = document.getElementById('btn-upgrade-tower');
     const btnSell = document.getElementById('btn-sell-tower');
 
-    if (closeBtn) {
-      closeBtn.onclick = () => {
-        this.triggerHaptic(15);
-        SoundSynthesizer.getInstance().playUiClick();
-        this.closeInspectCard();
-      };
-    }
+    bindTap(closeBtn, () => {
+      this.triggerHaptic(15);
+      SoundSynthesizer.getInstance().playUiClick();
+      this.closeInspectCard();
+    });
 
-    if (btnUpg) {
-      btnUpg.onclick = () => {
-        if (!this.selectedTower) return;
-        const cost = this.selectedTower.getUpgradeCost();
-        if (this.gameScene.gold >= cost) {
-          this.triggerHaptic(40);
-          this.gameScene.spendGold(cost);
-          this.selectedTower.upgrade();
-          this.updateInspectCardStats();
-          this.gameScene.showRange(this.selectedTower.x, this.selectedTower.y, this.selectedTower.currentRange);
-        } else {
-          this.triggerHaptic(100);
-          SoundSynthesizer.getInstance().playError();
-        }
-      };
-    }
+    bindTap(btnUpg, () => {
+      if (!this.selectedTower) return;
+      const cost = this.selectedTower.getUpgradeCost();
+      if (this.gameScene.gold >= cost) {
+        this.triggerHaptic(40);
+        this.gameScene.spendGold(cost);
+        this.selectedTower.upgrade();
+        this.updateInspectCardStats();
+        this.gameScene.showRange(this.selectedTower.x, this.selectedTower.y, this.selectedTower.currentRange);
+      } else {
+        this.triggerHaptic(100);
+        SoundSynthesizer.getInstance().playError();
+      }
+    });
 
-    if (btnSell) {
-      btnSell.onclick = () => {
-        if (!this.selectedTower) return;
-        this.triggerHaptic(25);
-        const sellVal = this.selectedTower.getSellValue();
-        this.gameScene.addGold(sellVal);
-        SoundSynthesizer.getInstance().playCoin();
-        this.gameScene.removeTower(this.selectedTower);
-        this.closeInspectCard();
-      };
-    }
+    bindTap(btnSell, () => {
+      if (!this.selectedTower) return;
+      this.triggerHaptic(25);
+      const sellVal = this.selectedTower.getSellValue();
+      this.gameScene.addGold(sellVal);
+      SoundSynthesizer.getInstance().playCoin();
+      this.gameScene.removeTower(this.selectedTower);
+      this.closeInspectCard();
+    });
 
     const targetBtns = document.querySelectorAll('.target-btn');
     targetBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const target = (e.target as HTMLElement).getAttribute('data-target') as TargetingMode;
+      bindTap(btn as HTMLElement, () => {
+        // Use the button element itself (not event.target) so taps on text still work
+        const target = (btn as HTMLElement).getAttribute('data-target') as TargetingMode;
         if (target && this.selectedTower) {
           this.triggerHaptic(15);
           SoundSynthesizer.getInstance().playUiClick();
@@ -259,7 +267,9 @@ export class UIScene extends Phaser.Scene {
     const card = document.getElementById('tower-inspect-card');
     const backdrop = document.getElementById('menu-backdrop');
     if (card) card.classList.add('hidden');
-    if (backdrop) backdrop.classList.add('hidden');
+    const menu = document.getElementById('radial-build-menu');
+    const menuOpen = menu && !menu.classList.contains('hidden');
+    if (backdrop && !menuOpen) backdrop.classList.add('hidden');
     this.gameScene.clearRange();
   }
 
@@ -309,20 +319,23 @@ export class UIScene extends Phaser.Scene {
 
   private bindWaveButtonEvents(): void {
     const btnCallWave = document.getElementById('btn-call-wave');
-    if (btnCallWave) {
-      btnCallWave.onclick = () => {
-        this.triggerHaptic(30);
-        this.closeBuildMenu();
-        this.closeInspectCard();
-        this.gameScene.startNextWave();
-      };
-    }
+    bindTap(btnCallWave, () => {
+      this.triggerHaptic(30);
+      this.closeBuildMenu();
+      this.closeInspectCard();
+      this.gameScene.startNextWave();
+    });
   }
 
   public setWaveButtonState(inProgress: boolean): void {
     const btnText = document.getElementById('btn-call-wave-text');
+    const btn = document.getElementById('btn-call-wave') as HTMLButtonElement | null;
     if (btnText) {
       btnText.innerText = inProgress ? 'KAMPF LÄUFT...' : 'NÄCHSTE WELLE';
+    }
+    if (btn) {
+      btn.disabled = inProgress;
+      btn.classList.toggle('disabled', inProgress);
     }
   }
 
@@ -351,27 +364,23 @@ export class UIScene extends Phaser.Scene {
     const btnRestart = document.getElementById('btn-modal-restart');
     const btnMenu = document.getElementById('btn-modal-menu');
 
-    if (btnRestart) {
-      btnRestart.onclick = () => {
-        this.triggerHaptic(25);
-        SoundSynthesizer.getInstance().playUiClick();
-        this.hideModal();
-        this.gameScene.restartLevel();
-      };
-    }
+    bindTap(btnRestart, () => {
+      this.triggerHaptic(25);
+      SoundSynthesizer.getInstance().playUiClick();
+      this.hideModal();
+      this.gameScene.restartLevel();
+    });
 
-    if (btnMenu) {
-      btnMenu.onclick = () => {
-        this.triggerHaptic(25);
-        SoundSynthesizer.getInstance().playUiClick();
-        this.hideModal();
-        const hud = document.getElementById('hud-overlay');
-        if (hud) hud.classList.add('hidden');
-        this.gameScene.scene.stop('GameScene');
-        this.scene.stop('UIScene');
-        this.gameScene.scene.start('WorldMapScene');
-      };
-    }
+    bindTap(btnMenu, () => {
+      this.triggerHaptic(25);
+      SoundSynthesizer.getInstance().playUiClick();
+      this.hideModal();
+      const hud = document.getElementById('hud-overlay');
+      if (hud) hud.classList.add('hidden');
+      this.gameScene.scene.stop('GameScene');
+      this.scene.stop('UIScene');
+      this.gameScene.scene.start('WorldMapScene');
+    });
   }
 
   public showVictoryModal(score: number, _kills: number, lives: number, totalLives: number): void {

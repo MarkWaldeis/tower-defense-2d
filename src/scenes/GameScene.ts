@@ -222,7 +222,11 @@ export class GameScene extends Phaser.Scene {
 
     const tower = new Tower(this, spot.x, spot.y, spotIndex, type);
     tower.setSize(64, 64);
-    tower.setInteractive({ useHandCursor: true });
+    // Hit area centered in the 64x64 container — large enough for finger taps
+    tower.setInteractive(
+      new Phaser.Geom.Circle(32, 32, 48),
+      Phaser.Geom.Circle.Contains
+    );
     tower.on('pointerdown', () => {
       SoundSynthesizer.getInstance().playUiClick();
       this.handleSpotClick(spotIndex);

@@ -187,12 +187,17 @@ export class WorldMapScene extends Phaser.Scene {
 
     this.cardContainer = this.add.container(width / 2, height / 2).setDepth(30);
 
-    // Backdrop
+    // Backdrop — only the dimmed area outside the parchment card closes the dialog.
+    // A full-screen interactive rect would race with the battle button on iOS.
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.6);
     overlay.fillRect(-width / 2, -height / 2, width, height);
-    overlay.setInteractive(new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height), Phaser.Geom.Rectangle.Contains);
-    overlay.on('pointerdown', () => {
+    const cardW = 380;
+    const cardH = 310;
+    const dismissZone = this.add
+      .rectangle(0, 0, width, height, 0x000000, 0)
+      .setInteractive();
+    dismissZone.on('pointerdown', () => {
       this.triggerHaptic(15);
       if (this.cardContainer) {
         this.cardContainer.destroy();
@@ -200,8 +205,6 @@ export class WorldMapScene extends Phaser.Scene {
       }
     });
 
-    const cardW = 380;
-    const cardH = 310;
     const card = this.add.graphics();
 
     // Wood Border
@@ -213,6 +216,14 @@ export class WorldMapScene extends Phaser.Scene {
     // Parchment Body
     card.fillStyle(0xfef3c7, 1);
     card.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 16);
+
+    // Block dismiss taps that land on the card body
+    const cardBlocker = this.add
+      .rectangle(0, 0, cardW + 16, cardH + 16, 0x000000, 0)
+      .setInteractive();
+    cardBlocker.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
+    });
 
     // Red Ribbon Banner
     const banner = this.add.graphics();
@@ -261,7 +272,8 @@ export class WorldMapScene extends Phaser.Scene {
       color: '#78350f'
     }).setOrigin(0.5);
 
-    // Battle Button (Giant 240x52 touch target)
+    // Battle Button — hit target is a direct child of the card container
+    // (nested container interactives are less reliable on iOS WKWebView)
     const btnBattle = this.add.container(0, cardH / 2 - 45);
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x16a34a, 1);
@@ -277,16 +289,18 @@ export class WorldMapScene extends Phaser.Scene {
       letterSpacing: 1
     }).setOrigin(0.5);
 
-    const btnHit = this.add.rectangle(0, 0, 240, 52, 0x000000, 0)
+    btnBattle.add([btnBg, btnText]);
+
+    const btnHit = this.add
+      .rectangle(0, cardH / 2 - 45, 260, 64, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
 
-    btnHit.on('pointerdown', () => {
+    btnHit.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
       this.triggerHaptic(40);
       SoundSynthesizer.getInstance().playWaveHorn();
       this.scene.start('GameScene', { levelId: node.id });
     });
-
-    btnBattle.add([btnBg, btnText, btnHit]);
 
     // Close button
     const btnCloseText = this.add.text(cardW / 2 - 18, -cardH / 2 + 18, '✕', {
@@ -296,10 +310,11 @@ export class WorldMapScene extends Phaser.Scene {
       color: '#78350f'
     }).setOrigin(0.5);
 
-    const closeHit = this.add.circle(cardW / 2 - 18, -cardH / 2 + 18, 28, 0x000000, 0)
+    const closeHit = this.add.circle(cardW / 2 - 18, -cardH / 2 + 18, 32, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
 
-    closeHit.on('pointerdown', () => {
+    closeHit.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
       this.triggerHaptic(15);
       SoundSynthesizer.getInstance().playUiClick();
       if (this.cardContainer) {
@@ -310,7 +325,9 @@ export class WorldMapScene extends Phaser.Scene {
 
     this.cardContainer.add([
       overlay,
+      dismissZone,
       card,
+      cardBlocker,
       banner,
       titleText,
       regionText,
@@ -318,6 +335,7 @@ export class WorldMapScene extends Phaser.Scene {
       starText,
       scoreText,
       btnBattle,
+      btnHit,
       btnCloseText,
       closeHit
     ]);

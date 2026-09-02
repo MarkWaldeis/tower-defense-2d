@@ -29,11 +29,11 @@
     <!-- Phaser Canvas Container -->
     <div id="game-container"></div>
 
-    <!-- Tap-Away Backdrop for Menus -->
-    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
-
     <!-- Kingdom Rush Frontiers Fantasy HUD (Only active during battle) -->
     <div id="hud-overlay" class="hud-overlay hidden">
+      <!-- Tap-Away Backdrop for Menus (inside HUD so z-index stacks correctly) -->
+      <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+
       <!-- Top Wooden Status Bar -->
       <header class="fantasy-top-bar">
         <div class="stat-badge gold-badge" title="Gold">

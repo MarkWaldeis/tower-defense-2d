@@ -13,6 +13,11 @@ export class SoundSynthesizer {
     return SoundSynthesizer.instance;
   }
 
+  /** Must be called from a user gesture on iOS to unlock WebAudio. */
+  public unlock(): void {
+    this.getContext();
+  }
+
   private getContext(): AudioContext | null {
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

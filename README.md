@@ -49,16 +49,26 @@ Ein handgezeichnetes 2D Fantasy Tower Defense Spiel im **Kingdom Rush Frontiers*
 ## 🛠️ Lokale Entwicklung & Export
 
 ```bash
-# Entwicklungsserver starten
+# Entwicklungsserver starten (Web)
 npm run dev
 
 # Produktions-Build erstellen
 npm run build
 
-# Android App starten (Capacitor)
-npx cap add android
-npx cap open android
+# iOS App (Capacitor, Querformat)
+# Voraussetzung: macOS + Xcode
+npx cap add ios          # einmalig
+npm run cap:ios          # build + sync + Landscape-Lock + Xcode öffnen
+
+# Android App
+npx cap add android      # einmalig
+npm run cap:android
 ```
+
+### Mobile Hinweise
+- **Nur Querformat:** Im Browser erscheint im Hochformat ein Dreh-Hinweis; die native iOS-App wird auf Landscape gelockt.
+- **Touch:** HUD-Buttons nutzen Pointer-Events; Baumenüs werden in Canvas-Koordinaten korrekt positioniert.
+- **Web:** PWA-Manifest erzwingt `orientation: "landscape"`.
 
 ---
 
