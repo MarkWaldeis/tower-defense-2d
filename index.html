@@ -29,58 +29,10 @@
     <!-- Phaser Canvas Container -->
     <div id="game-container"></div>
 
-    <!-- World Map Direct HTML Touch Launcher Overlay -->
-    <div id="world-map-ui" class="world-map-ui">
-      <!-- Top Campaign Header -->
-      <div class="world-map-header">
-        <div class="wm-title">👑 KÖNIGREICH KAELESTRIA</div>
-        <div class="wm-stars" id="wm-total-stars">⭐ 0 / 9</div>
-      </div>
-
-      <!-- Stage Selection Buttons on World Map -->
-      <button class="stage-pin-btn pin-stage-1" id="pin-stage-1" data-id="1">
-        <div class="pin-top">🚩 STUFE 1</div>
-        <div class="pin-title">OASE ⚔️</div>
-        <div class="pin-stars" id="pin-stars-1">☆☆☆</div>
-      </button>
-
-      <button class="stage-pin-btn pin-stage-2" id="pin-stage-2" data-id="2">
-        <div class="pin-top">🚩 STUFE 2</div>
-        <div class="pin-title">CANYON ⚔️</div>
-        <div class="pin-stars" id="pin-stars-2">☆☆☆</div>
-      </button>
-
-      <button class="stage-pin-btn pin-stage-3" id="pin-stage-3" data-id="3">
-        <div class="pin-top">🚩 STUFE 3</div>
-        <div class="pin-title">PYRAMIDE ⚔️</div>
-        <div class="pin-stars" id="pin-stars-3">☆☆☆</div>
-      </button>
-
-      <!-- Stage Briefing Modal in HTML -->
-      <div id="stage-briefing-modal" class="game-modal hidden">
-        <div class="modal-box stage-card-box">
-          <div class="modal-card-top">
-            <span class="modal-level-tag" id="modal-stage-num">STUFE 1</span>
-            <button class="close-btn" id="modal-stage-close">✕</button>
-          </div>
-          <h2 class="modal-title" id="modal-stage-name">SONNENTAL-RUINEN</h2>
-          <div class="modal-region" id="modal-stage-region">📍 Al'Kazam Oasental</div>
-          <p id="modal-stage-desc" class="modal-desc">Verteidige den Oasenpfad vor anrückenden Sand-Goblins und antiken Golems!</p>
-          <div class="modal-stars" id="modal-stage-stars">★★★</div>
-          <div class="modal-score" id="modal-stage-score">Bester Punktestand: 0</div>
-          <div class="modal-btn-row">
-            <button class="btn-battle-launch" id="modal-btn-start-battle">
-              ⚔️ ZUM KAMPF STARTEN ⚔️
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Tap-Away Backdrop for Menus -->
     <div id="menu-backdrop" class="menu-backdrop hidden"></div>
 
-    <!-- Kingdom Rush Frontiers Fantasy HUD -->
+    <!-- Kingdom Rush Frontiers Fantasy HUD (Only active during battle) -->
     <div id="hud-overlay" class="hud-overlay hidden">
       <!-- Top Wooden Status Bar -->
       <header class="fantasy-top-bar">

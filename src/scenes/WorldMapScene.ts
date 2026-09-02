@@ -13,12 +13,12 @@ interface StageNode {
 
 export class WorldMapScene extends Phaser.Scene {
   private stageNodes: StageNode[] = [
-    { id: 1, x: 260, y: 360, name: 'Sonnental-Ruinen & Oase', region: "Al'Kazam Oasental" },
-    { id: 2, x: 570, y: 350, name: 'Knochen-Canyon & Ruinen', region: 'Ruinen von Amun' },
-    { id: 3, x: 800, y: 330, name: 'Goldene Sonnen-Pyramide', region: 'Kaelestria Königspyramide' }
+    { id: 1, x: 240, y: 390, name: 'Sonnental-Ruinen & Oase', region: "Al'Kazam Oasental" },
+    { id: 2, x: 560, y: 380, name: 'Knochen-Canyon & Ruinen', region: 'Ruinen von Amun' },
+    { id: 3, x: 810, y: 350, name: 'Goldene Sonnen-Pyramide', region: 'Kaelestria Königspyramide' }
   ];
 
-  private selectedStageId: number = 1;
+  private cardContainer: Phaser.GameObjects.Container | null = null;
 
   constructor() {
     super('WorldMapScene');
@@ -30,10 +30,8 @@ export class WorldMapScene extends Phaser.Scene {
     // Hide gameplay HUD in World Map
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.classList.add('hidden');
-
-    // Show HTML World Map Touch Launcher UI
-    const worldMapUi = document.getElementById('world-map-ui');
-    if (worldMapUi) worldMapUi.classList.remove('hidden');
+    const backdrop = document.getElementById('menu-backdrop');
+    if (backdrop) backdrop.classList.add('hidden');
 
     // 1. Render AAA Hand-Drawn Campaign Background Map
     if (this.textures.exists('map_world_campaign')) {
@@ -49,121 +47,17 @@ export class WorldMapScene extends Phaser.Scene {
     // 2. Render Stage Connecting Path Dots
     this.renderPathConnections();
 
-    // 3. Render Canvas Node Bases
+    // 3. Render Stage Flags & Interactive Nodes
     this.renderStageNodes();
 
-    // 4. Bind HTML Mobile Touch Overlay Buttons
-    this.initHtmlStageButtons();
+    // 4. Render Top Campaign Bar
+    this.renderTopCampaignBar(width);
   }
 
   private triggerHaptic(duration: number = 25): void {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(duration);
     }
-  }
-
-  private initHtmlStageButtons(): void {
-    const save = SaveManager.getInstance();
-    const totalStars = save.getTotalStars();
-
-    const totalStarsEl = document.getElementById('wm-total-stars');
-    if (totalStarsEl) totalStarsEl.innerText = `⭐ ${totalStars} / 9`;
-
-    for (let id = 1; id <= 3; id++) {
-      const btn = document.getElementById(`pin-stage-1`.replace('1', `${id}`));
-      const starsEl = document.getElementById(`pin-stars-1`.replace('1', `${id}`));
-      const levelData = save.getLevel(id);
-      const isUnlocked = levelData.unlocked || id === 1;
-
-      if (starsEl) {
-        let starsStr = '';
-        for (let s = 0; s < 3; s++) {
-          starsStr += s < levelData.stars ? '★' : '☆';
-        }
-        starsEl.innerText = starsStr;
-      }
-
-      if (btn) {
-        if (!isUnlocked) {
-          btn.classList.add('locked');
-          btn.onclick = () => {
-            this.triggerHaptic(60);
-            SoundSynthesizer.getInstance().playError();
-          };
-        } else {
-          btn.classList.remove('locked');
-          btn.onclick = () => {
-            this.triggerHaptic(30);
-            SoundSynthesizer.getInstance().playUiClick();
-            this.openHtmlStageBriefing(id);
-          };
-        }
-      }
-    }
-
-    // Modal Close
-    const modalClose = document.getElementById('modal-stage-close');
-    if (modalClose) {
-      modalClose.onclick = () => {
-        this.triggerHaptic(15);
-        SoundSynthesizer.getInstance().playUiClick();
-        this.closeHtmlStageBriefing();
-      };
-    }
-
-    // Modal Start Battle Button
-    const btnBattle = document.getElementById('modal-btn-start-battle');
-    if (btnBattle) {
-      btnBattle.onclick = () => {
-        this.triggerHaptic(40);
-        SoundSynthesizer.getInstance().playWaveHorn();
-        this.closeHtmlStageBriefing();
-        this.startLevel(this.selectedStageId);
-      };
-    }
-  }
-
-  private openHtmlStageBriefing(stageId: number): void {
-    this.selectedStageId = stageId;
-    const save = SaveManager.getInstance();
-    const levelData = save.getLevel(stageId);
-    const map = MAPS.find(m => m.id === stageId) || MAPS[0];
-
-    const modal = document.getElementById('stage-briefing-modal');
-    const stageNum = document.getElementById('modal-stage-num');
-    const stageName = document.getElementById('modal-stage-name');
-    const stageRegion = document.getElementById('modal-stage-region');
-    const stageDesc = document.getElementById('modal-stage-desc');
-    const stageStars = document.getElementById('modal-stage-stars');
-    const stageScore = document.getElementById('modal-stage-score');
-
-    if (modal && stageNum && stageName && stageRegion && stageDesc && stageStars && stageScore) {
-      stageNum.innerText = `STUFE ${stageId}`;
-      stageName.innerText = map.name.toUpperCase();
-      stageRegion.innerText = `📍 ${map.region}`;
-      stageDesc.innerText = map.description;
-
-      let starsStr = '';
-      for (let s = 0; s < 3; s++) {
-        starsStr += s < levelData.stars ? '★ ' : '☆ ';
-      }
-      stageStars.innerText = starsStr;
-      stageScore.innerText = `Bester Punktestand: ${levelData.highScore}`;
-
-      modal.classList.remove('hidden');
-    }
-  }
-
-  private closeHtmlStageBriefing(): void {
-    const modal = document.getElementById('stage-briefing-modal');
-    if (modal) modal.classList.add('hidden');
-  }
-
-  public startLevel(levelId: number): void {
-    const worldMapUi = document.getElementById('world-map-ui');
-    if (worldMapUi) worldMapUi.classList.add('hidden');
-
-    this.scene.start('GameScene', { levelId });
   }
 
   private renderPathConnections(): void {
@@ -174,7 +68,7 @@ export class WorldMapScene extends Phaser.Scene {
       const n2 = this.stageNodes[i + 1];
 
       const midX = (n1.x + n2.x) / 2;
-      const midY = (n1.y + n2.y) / 2 - 20;
+      const midY = (n1.y + n2.y) / 2 - 25;
 
       const curve = new Phaser.Curves.QuadraticBezier(
         new Phaser.Math.Vector2(n1.x, n1.y),
@@ -201,15 +95,16 @@ export class WorldMapScene extends Phaser.Scene {
 
       const container = this.add.container(node.x, node.y).setDepth(5);
 
-      // Node Base Graphic
+      // Node Foundation Base
       const base = this.add.graphics();
       base.fillStyle(isUnlocked ? 0xfef08a : 0x78716c, 0.95);
       base.fillCircle(0, 0, 26);
       base.lineStyle(3.5, isUnlocked ? 0xb45309 : 0x44403c, 1);
       base.strokeCircle(0, 0, 26);
+      container.add(base);
 
       if (isUnlocked) {
-        // Red Banner Flag
+        // Red Kingdom Rush Banner Flag
         const flag = this.add.graphics();
         flag.fillStyle(0x451a03, 1);
         flag.fillRect(-2, -38, 4, 38);
@@ -219,6 +114,7 @@ export class WorldMapScene extends Phaser.Scene {
         flag.strokeTriangle(2, -38, 32, -26, 2, -14);
         container.add(flag);
 
+        // Stage Number
         const numText = this.add.text(0, 0, `${node.id}`, {
           fontFamily: '-apple-system, Inter, "Segoe UI", sans-serif',
           fontSize: '20px',
@@ -227,6 +123,22 @@ export class WorldMapScene extends Phaser.Scene {
         }).setOrigin(0.5);
         container.add(numText);
 
+        // Stars below node
+        let starsStr = '';
+        for (let i = 0; i < 3; i++) {
+          starsStr += i < levelData.stars ? '★' : '☆';
+        }
+        const starsText = this.add.text(0, 36, starsStr, {
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '16px',
+          fontStyle: 'bold',
+          color: '#eab308',
+          stroke: '#451a03',
+          strokeThickness: 3
+        }).setOrigin(0.5);
+        container.add(starsText);
+
+        // Pulsing glowing ring for current stage
         const pulse = this.add.circle(0, 0, 32, 0xfacc15, 0.5);
         this.tweens.add({
           targets: pulse,
@@ -237,24 +149,216 @@ export class WorldMapScene extends Phaser.Scene {
           ease: 'Sine.easeOut'
         });
         container.add(pulse);
+
+        // Dedicated 110px diameter touch hitZone for instant 0ms touch response
+        const hitZone = this.add.circle(node.x, node.y, 55, 0x000000, 0)
+          .setInteractive({ useHandCursor: true })
+          .setDepth(20);
+
+        hitZone.on('pointerover', () => {
+          this.tweens.add({ targets: container, scale: 1.15, duration: 120 });
+        });
+        hitZone.on('pointerout', () => {
+          this.tweens.add({ targets: container, scale: 1.0, duration: 120 });
+        });
+        hitZone.on('pointerdown', () => {
+          this.triggerHaptic(30);
+          SoundSynthesizer.getInstance().playUiClick();
+          this.openStageCard(node);
+        });
       } else {
         const lock = this.add.text(0, 0, '🔒', {
           fontSize: '20px'
         }).setOrigin(0.5);
         container.add(lock);
       }
+    });
+  }
 
-      container.add(base);
+  private openStageCard(node: StageNode): void {
+    if (this.cardContainer) {
+      this.cardContainer.destroy();
+    }
 
-      if (isUnlocked) {
-        // 100px diameter touch area
-        container.setInteractive(new Phaser.Geom.Circle(0, 0, 50), Phaser.Geom.Circle.Contains);
-        container.on('pointerdown', () => {
-          this.triggerHaptic(25);
-          SoundSynthesizer.getInstance().playUiClick();
-          this.openHtmlStageBriefing(node.id);
-        });
+    const { width, height } = this.scale;
+    const save = SaveManager.getInstance();
+    const levelData = save.getLevel(node.id);
+    const map = MAPS.find(m => m.id === node.id) || MAPS[0];
+
+    this.cardContainer = this.add.container(width / 2, height / 2).setDepth(30);
+
+    // Backdrop
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.6);
+    overlay.fillRect(-width / 2, -height / 2, width, height);
+    overlay.setInteractive(new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height), Phaser.Geom.Rectangle.Contains);
+    overlay.on('pointerdown', () => {
+      this.triggerHaptic(15);
+      if (this.cardContainer) {
+        this.cardContainer.destroy();
+        this.cardContainer = null;
       }
     });
+
+    const cardW = 380;
+    const cardH = 310;
+    const card = this.add.graphics();
+
+    // Wood Border
+    card.fillStyle(0x451a03, 1);
+    card.fillRoundedRect(-cardW / 2 - 8, -cardH / 2 - 8, cardW + 16, cardH + 16, 20);
+    card.lineStyle(3, 0x92400e, 1);
+    card.strokeRoundedRect(-cardW / 2 - 8, -cardH / 2 - 8, cardW + 16, cardH + 16, 20);
+
+    // Parchment Body
+    card.fillStyle(0xfef3c7, 1);
+    card.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 16);
+
+    // Red Ribbon Banner
+    const banner = this.add.graphics();
+    banner.fillStyle(0xb91c1c, 1);
+    banner.fillRoundedRect(-140, -cardH / 2 - 16, 280, 36, 8);
+    banner.lineStyle(2, 0x7f1d1d, 1);
+    banner.strokeRoundedRect(-140, -cardH / 2 - 16, 280, 36, 8);
+
+    const titleText = this.add.text(0, -cardH / 2 + 2, node.name.toUpperCase(), {
+      fontFamily: '-apple-system, Inter, "Segoe UI", sans-serif',
+      fontSize: '14px',
+      fontStyle: '900',
+      color: '#ffffff',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+
+    const regionText = this.add.text(0, -cardH / 2 + 38, `📍 ${node.region}`, {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '12px',
+      fontStyle: '700',
+      color: '#b45309'
+    }).setOrigin(0.5);
+
+    const descText = this.add.text(0, -cardH / 2 + 82, map.description, {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '13px',
+      color: '#451a03',
+      align: 'center',
+      wordWrap: { width: 330 }
+    }).setOrigin(0.5);
+
+    let starsStr = '';
+    for (let i = 0; i < 3; i++) {
+      starsStr += i < levelData.stars ? '★ ' : '☆ ';
+    }
+    const starText = this.add.text(0, -cardH / 2 + 138, starsStr, {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '28px',
+      color: '#eab308'
+    }).setOrigin(0.5);
+
+    const scoreText = this.add.text(0, -cardH / 2 + 175, `Bester Punktestand: ${levelData.highScore}`, {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '13px',
+      fontStyle: 'bold',
+      color: '#78350f'
+    }).setOrigin(0.5);
+
+    // Battle Button (Giant 240x52 touch target)
+    const btnBattle = this.add.container(0, cardH / 2 - 45);
+    const btnBg = this.add.graphics();
+    btnBg.fillStyle(0x16a34a, 1);
+    btnBg.fillRoundedRect(-120, -26, 240, 52, 26);
+    btnBg.lineStyle(2.5, 0x14532d, 1);
+    btnBg.strokeRoundedRect(-120, -26, 240, 52, 26);
+
+    const btnText = this.add.text(0, 0, '⚔️ ZUM KAMPF ⚔️', {
+      fontFamily: '-apple-system, Inter, "Segoe UI", sans-serif',
+      fontSize: '17px',
+      fontStyle: '900',
+      color: '#ffffff',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+
+    const btnHit = this.add.rectangle(0, 0, 240, 52, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+
+    btnHit.on('pointerdown', () => {
+      this.triggerHaptic(40);
+      SoundSynthesizer.getInstance().playWaveHorn();
+      this.scene.start('GameScene', { levelId: node.id });
+    });
+
+    btnBattle.add([btnBg, btnText, btnHit]);
+
+    // Close button
+    const btnCloseText = this.add.text(cardW / 2 - 18, -cardH / 2 + 18, '✕', {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '22px',
+      fontStyle: '900',
+      color: '#78350f'
+    }).setOrigin(0.5);
+
+    const closeHit = this.add.circle(cardW / 2 - 18, -cardH / 2 + 18, 28, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+
+    closeHit.on('pointerdown', () => {
+      this.triggerHaptic(15);
+      SoundSynthesizer.getInstance().playUiClick();
+      if (this.cardContainer) {
+        this.cardContainer.destroy();
+        this.cardContainer = null;
+      }
+    });
+
+    this.cardContainer.add([
+      overlay,
+      card,
+      banner,
+      titleText,
+      regionText,
+      descText,
+      starText,
+      scoreText,
+      btnBattle,
+      btnCloseText,
+      closeHit
+    ]);
+
+    this.cardContainer.setScale(0.8);
+    this.tweens.add({
+      targets: this.cardContainer,
+      scale: 1,
+      duration: 180,
+      ease: 'Back.out'
+    });
+  }
+
+  private renderTopCampaignBar(width: number): void {
+    const save = SaveManager.getInstance();
+    const totalStars = save.getTotalStars();
+
+    const topBar = this.add.container(width / 2, 34).setDepth(20);
+
+    const plateW = Math.min(480, width * 0.85);
+    const bg = this.add.graphics();
+    bg.fillStyle(0x451a03, 0.95);
+    bg.fillRoundedRect(-plateW / 2, -18, plateW, 36, 18);
+    bg.lineStyle(2, 0xd4a373, 1);
+    bg.strokeRoundedRect(-plateW / 2, -18, plateW, 36, 18);
+
+    const title = this.add.text(-plateW / 2 + 18, 0, '👑 KÖNIGREICH KAELESTRIA', {
+      fontFamily: '-apple-system, Inter, "Segoe UI", sans-serif',
+      fontSize: '12px',
+      fontStyle: '900',
+      color: '#fde047',
+      letterSpacing: 1
+    }).setOrigin(0, 0.5);
+
+    const starsBadge = this.add.text(plateW / 2 - 20, 0, `⭐ ${totalStars} / 9`, {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '12px',
+      fontStyle: '900',
+      color: '#ffffff'
+    }).setOrigin(1, 0.5);
+
+    topBar.add([bg, title, starsBadge]);
   }
 }
