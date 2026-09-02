@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Tower Defense 2D - Mobile Strategy</title>
+  
+  <!-- Mobile & PWA meta tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TowerDefense2D" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0a0e1a" />
+  <meta name="description" content="Next-Gen 2D Mobile Tower Defense mit taktischer FSM-Engine, Apple Liquid Glass UI und dynamischen Gegnerwellen." />
+
+  <!-- Preconnect & Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./src/styles/glass-ui.css" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+</head>
+<body>
+  <div id="app-container">
+    <!-- Phaser Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- DOM-Based Apple Liquid Glass Tactical HUD Overlay -->
+    <div id="hud-overlay" class="hud-overlay hidden">
+      <!-- Top Tactical Bar -->
+      <header class="tactical-top-bar glass-panel">
+        <div class="stat-badge gold-badge" id="hud-gold-badge" title="Credits / Gold">
+          <span class="icon">🪙</span>
+          <span class="value" id="hud-gold-text">450</span>
+        </div>
+        <div class="stat-badge lives-badge" id="hud-lives-badge" title="Basis-Integrität">
+          <span class="icon">❤️</span>
+          <span class="value" id="hud-lives-text">20</span>
+        </div>
+        <div class="stat-badge wave-badge" id="hud-wave-badge" title="Aktuelle Welle">
+          <span class="label">WELLE</span>
+          <span class="value" id="hud-wave-text">1 / 15</span>
+        </div>
+        <div class="stat-badge score-badge" id="hud-score-badge" title="Punkte">
+          <span class="label">PUNKTE</span>
+          <span class="value" id="hud-score-text">0</span>
+        </div>
+
+        <div class="top-actions">
+          <button class="glass-icon-btn" id="btn-speed" title="Geschwindigkeit (1x / 2x / 3x)">
+            <span id="btn-speed-label">1x</span>
+          </button>
+          <button class="glass-icon-btn" id="btn-pause" title="Pause">
+            <span id="btn-pause-icon">⏸️</span>
+          </button>
+          <button class="glass-icon-btn" id="btn-sound" title="Audio An/Aus">
+            <span id="btn-sound-icon">🔊</span>
+          </button>
+          <button class="glass-icon-btn" id="btn-fullscreen" title="Vollbild">
+            <span>⛶</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Wave Incoming Notification Banner -->
+      <div id="wave-banner" class="wave-banner hidden">
+        <div class="banner-glass">
+          <span class="banner-title" id="banner-title">WELLE 1 STARTET</span>
+          <span class="banner-subtitle" id="banner-subtitle">Gegner nähern sich aus dem Nord-Pfad!</span>
+        </div>
+      </div>
+
+      <!-- Selected Tower Inspection & Upgrade Card -->
+      <div id="tower-inspect-card" class="tower-inspect-card glass-panel hidden">
+        <div class="card-header">
+          <div class="tower-avatar" id="inspect-avatar">🔫</div>
+          <div class="tower-title-info">
+            <div class="tower-name" id="inspect-name">Gatling-Turm</div>
+            <div class="tower-level-tag" id="inspect-level">LVL 1 • MK-I</div>
+          </div>
+          <button class="close-card-btn" id="btn-close-inspect">✕</button>
+        </div>
+
+        <div class="card-stats">
+          <div class="stat-item">
+            <span class="s-label">SCHADEN:</span>
+            <span class="s-val" id="inspect-dmg">18</span>
+          </div>
+          <div class="stat-item">
+            <span class="s-label">REICHWEITE:</span>
+            <span class="s-val" id="inspect-range">140px</span>
+          </div>
+          <div class="stat-item">
+            <span class="s-label">KADENZ:</span>
+            <span class="s-val" id="inspect-firerate">4.5/s</span>
+          </div>
+          <div class="stat-item">
+            <span class="s-label">DPS:</span>
+            <span class="s-val accent" id="inspect-dps">81</span>
+          </div>
+        </div>
+
+        <!-- Targeting Mode Selector -->
+        <div class="targeting-bar">
+          <span class="t-label">ZIEL:</span>
+          <div class="targeting-buttons">
+            <button class="target-btn active" data-target="FIRST">ERSTER</button>
+            <button class="target-btn" data-target="LAST">LETZTER</button>
+            <button class="target-btn" data-target="STRONGEST">STÄRKSTER</button>
+            <button class="target-btn" data-target="CLOSEST">NÄCHSTER</button>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button class="glass-btn btn-upgrade" id="btn-upgrade-tower">
+            <div class="btn-main">UPGRADE</div>
+            <div class="btn-sub" id="inspect-upgrade-cost">🪙 120</div>
+          </button>
+          <button class="glass-btn btn-sell" id="btn-sell-tower">
+            <div class="btn-main">VERKAUFEN</div>
+            <div class="btn-sub" id="inspect-sell-value">+🪙 65</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Build Bar / Tower Drawer -->
+      <footer class="tactical-bottom-bar glass-panel" id="bottom-build-bar">
+        <div class="drawer-drag-handle"></div>
+        <div class="build-scroll-container" id="tower-build-list">
+          <!-- Populated dynamically with Tower Cards -->
+        </div>
+        <div class="wave-trigger-container">
+          <button class="glass-btn btn-call-wave" id="btn-call-wave">
+            <span class="pulse-ring"></span>
+            <span class="wave-btn-text" id="btn-call-wave-text">NÄCHSTE WELLE</span>
+            <span class="wave-btn-bonus">+50 🪙 Bonus</span>
+          </button>
+        </div>
+      </footer>
+
+      <!-- Game Over / Victory Modal -->
+      <div id="game-modal" class="game-modal glass-modal hidden">
+        <div class="modal-card glass-panel">
+          <div class="modal-badge" id="modal-badge">🏆</div>
+          <h2 class="modal-title" id="modal-title">SIEG! SEKTOR GESICHERT</h2>
+          <p class="modal-desc" id="modal-desc">Alle 15 Wellen erfolgreich abgewehrt. Keine Feinde durchgebrochen.</p>
+
+          <div class="modal-stars" id="modal-stars">
+            <span class="star filled">★</span>
+            <span class="star filled">★</span>
+            <span class="star filled">★</span>
+          </div>
+
+          <div class="modal-stats-grid">
+            <div class="modal-stat-box">
+              <span class="ms-lbl">PUNKTE</span>
+              <span class="ms-val" id="modal-final-score">14,250</span>
+            </div>
+            <div class="modal-stat-box">
+              <span class="ms-lbl">ZERSTÖRTE FEINDE</span>
+              <span class="ms-val" id="modal-final-kills">184</span>
+            </div>
+            <div class="modal-stat-box">
+              <span class="ms-lbl">VERBLEIBENDE BASIS</span>
+              <span class="ms-val" id="modal-final-lives">18 / 20</span>
+            </div>
+          </div>
+
+          <div class="modal-btn-row">
+            <button class="glass-btn btn-primary" id="btn-modal-restart">NOCHMAL</button>
+            <button class="glass-btn btn-secondary" id="btn-modal-menu">HAUPTMENÜ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
