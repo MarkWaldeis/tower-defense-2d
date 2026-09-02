@@ -8,13 +8,13 @@ const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
   width: 1024,
-  height: 640,
+  height: 576,
   backgroundColor: '#2e1a0d',
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 1024,
-    height: 640
+    height: 576
   },
   render: {
     antialias: true,
