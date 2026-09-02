@@ -71,8 +71,16 @@ export class GameScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
 
-    // 1. Render Kingdom Rush Frontiers Hand-Drawn Desert Map
-    this.renderDesertMap(width, height);
+    // 1. Render AAA Hand-Drawn Desert Canyon Battle Map Background
+    if (this.textures.exists('map_desert_ruins')) {
+      const bg = this.add.image(width / 2, height / 2, 'map_desert_ruins');
+      bg.setDisplaySize(width, height);
+      bg.setDepth(0);
+    } else {
+      const g = this.add.graphics().setDepth(0);
+      g.fillGradientStyle(0xdfba81, 0xdfba81, 0xcda063, 0xcda063, 1);
+      g.fillRect(0, 0, width, height);
+    }
 
     // 2. Systems setup
     this.juiceManager = new JuiceManager(this);
@@ -108,155 +116,6 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private renderDesertMap(width: number, height: number): void {
-    const g = this.add.graphics().setDepth(1);
-
-    // 1. Canyon Sandstone Background
-    g.fillGradientStyle(0xdfba81, 0xdfba81, 0xcda063, 0xcda063, 1);
-    g.fillRect(0, 0, width, height);
-
-    // 2. Canyon Cliffs (Top & Bottom rock borders)
-    g.fillStyle(0x926639, 1);
-    // North Canyon Wall
-    g.fillRect(0, 0, width, 110);
-    g.lineStyle(3, 0x543618, 1);
-    g.strokeRect(0, 0, width, 110);
-
-    // South Canyon Wall
-    g.fillStyle(0x82542a, 1);
-    g.fillRect(0, height - 70, width, 70);
-    g.strokeRect(0, height - 70, width, 70);
-
-    // 3. Ancient Sandstone Temple 1 (Upper Left)
-    this.drawAncientTemple(g, 180, 50, 'TEMPEL DER SONNE');
-
-    // 4. Ancient Sandstone Temple 2 (Upper Right)
-    this.drawAncientTemple(g, 810, 50, 'RUINEN VON RA');
-
-    // 5. Central Oasis (Water pool + Palms + Cacti)
-    g.fillStyle(0x38bdf8, 1);
-    g.fillEllipse(540, 340, 95, 55);
-    g.lineStyle(3, 0x0284c7, 1);
-    g.strokeEllipse(540, 340, 95, 55);
-    // Water reflection ring
-    g.fillStyle(0xe0f2fe, 0.4);
-    g.fillEllipse(530, 335, 50, 24);
-
-    this.drawPalm(475, 310);
-    this.drawPalm(610, 320);
-    this.drawPalm(580, 375);
-    this.drawCactus(460, 360);
-    this.drawCactus(630, 360);
-
-    // 6. Terracotta Desert Houses in lower canyon
-    this.drawDesertHouse(g, 260, 500);
-    this.drawDesertHouse(g, 780, 480);
-
-    // 7. Winding Sandy Road (Wide dirt track with stones & tracks)
-    const pts = this.mapData.waypoints;
-    g.lineStyle(42, 0xc29358, 1);
-    g.beginPath();
-    g.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) {
-      g.lineTo(pts[i].x, pts[i].y);
-    }
-    g.strokePath();
-
-    // Road Outline
-    g.lineStyle(3, 0x7c532b, 0.75);
-    g.strokePath();
-
-    // Road Inner Sand Glow
-    g.lineStyle(24, 0xdfba81, 0.85);
-    g.strokePath();
-
-    // Spawn Mountain Cave (Left Portal)
-    g.fillStyle(0x3e2714, 1);
-    g.fillRoundedRect(10, 175, 50, 90, 8);
-    g.lineStyle(4, 0x78350f, 1);
-    g.strokeRoundedRect(10, 175, 50, 90, 8);
-    this.add.text(35, 220, '👹 SPAWN', {
-      fontFamily: 'Inter, sans-serif',
-      fontSize: '10px',
-      fontStyle: '900',
-      color: '#fde047'
-    }).setOrigin(0.5).setDepth(2);
-
-    // Fortress Base Exit (Right Portal)
-    g.fillStyle(0x1e293b, 1);
-    g.fillRoundedRect(width - 60, 165, 50, 90, 8);
-    g.lineStyle(4, 0x3b82f6, 1);
-    g.strokeRoundedRect(width - 60, 165, 50, 90, 8);
-    this.add.text(width - 35, 210, '🏰 BASIS', {
-      fontFamily: 'Inter, sans-serif',
-      fontSize: '10px',
-      fontStyle: '900',
-      color: '#38bdf8'
-    }).setOrigin(0.5).setDepth(2);
-  }
-
-  private drawAncientTemple(g: Phaser.GameObjects.Graphics, x: number, y: number, label: string): void {
-    // Temple Roof / Pediment
-    g.fillStyle(0xdfba81, 1);
-    g.fillTriangle(x, y - 18, x - 55, y + 10, x + 55, y + 10);
-    g.lineStyle(2, 0x78350f, 1);
-    g.strokeTriangle(x, y - 18, x - 55, y + 10, x + 55, y + 10);
-
-    // Pillars
-    g.fillStyle(0xfef3c7, 1);
-    for (let px = x - 42; px <= x + 42; px += 28) {
-      g.fillRect(px - 5, y + 10, 10, 32);
-      g.strokeRect(px - 5, y + 10, 10, 32);
-    }
-
-    // Temple Base Step
-    g.fillRect(x - 60, y + 42, 120, 12);
-    g.strokeRect(x - 60, y + 42, 120, 12);
-
-    this.add.text(x, y + 26, label, {
-      fontFamily: 'Inter, sans-serif',
-      fontSize: '8px',
-      fontStyle: 'bold',
-      color: '#78350f'
-    }).setOrigin(0.5).setDepth(2);
-  }
-
-  private drawPalm(x: number, y: number): void {
-    const g = this.add.graphics().setDepth(2);
-    g.lineStyle(4, 0x78350f, 1);
-    g.beginPath();
-    g.moveTo(x, y + 20);
-    g.lineTo(x, y);
-    g.strokePath();
-
-    g.fillStyle(0x16a34a, 1);
-    g.fillCircle(x - 10, y - 4, 9);
-    g.fillCircle(x + 10, y - 4, 9);
-    g.fillCircle(x, y - 10, 10);
-  }
-
-  private drawCactus(x: number, y: number): void {
-    const g = this.add.graphics().setDepth(2);
-    g.fillStyle(0x15803d, 1);
-    g.fillRoundedRect(x - 3, y - 14, 6, 20, 2);
-    g.fillRoundedRect(x - 9, y - 10, 6, 4, 2);
-    g.fillRoundedRect(x - 9, y - 14, 4, 8, 2);
-    g.fillRoundedRect(x + 3, y - 6, 6, 4, 2);
-    g.fillRoundedRect(x + 5, y - 10, 4, 8, 2);
-  }
-
-  private drawDesertHouse(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
-    g.fillStyle(0xfef08a, 1);
-    g.fillRoundedRect(x - 22, y - 16, 44, 32, 4);
-    g.lineStyle(2, 0x92400e, 1);
-    g.strokeRoundedRect(x - 22, y - 16, 44, 32, 4);
-    // Wooden Door & Window
-    g.fillStyle(0x78350f, 1);
-    g.fillRect(x - 6, y, 12, 16);
-    g.fillStyle(0x38bdf8, 1);
-    g.fillRect(x - 16, y - 8, 7, 7);
-  }
-
   private renderBuildSpots(): void {
     this.buildSpots.forEach((spot, index) => {
       const sprite = this.add.sprite(spot.x, spot.y, 'build_spot_empty')
@@ -265,7 +124,7 @@ export class GameScene extends Phaser.Scene {
 
       sprite.on('pointerover', () => {
         if (!spot.occupied) {
-          sprite.setScale(1.1);
+          sprite.setScale(1.15);
         }
       });
 
@@ -310,7 +169,6 @@ export class GameScene extends Phaser.Scene {
 
   private setupInputHandlers(): void {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // If clicking outside HUD and spell is active
       if (this.activeSpell) {
         if (this.activeSpell === 'LIGHTNING') {
           this.castLightningSpell(pointer.x, pointer.y);
@@ -327,13 +185,11 @@ export class GameScene extends Phaser.Scene {
     if (!spot) return;
 
     if (!spot.occupied) {
-      // Open Radial / Drawer Build Menu for this spot
       this.selectedSpotIndex = spotIndex;
       this.selectedTower = null;
       this.uiScene.openBuildMenuForSpot(spotIndex, spot.x, spot.y);
       this.showRange(spot.x, spot.y, TOWERS_CONFIG.SLINGER.range);
     } else {
-      // Find existing tower on this spot
       const tower = this.towers.find(t => t.spotIndex === spotIndex);
       if (tower) {
         this.selectedTower = tower;
@@ -384,7 +240,6 @@ export class GameScene extends Phaser.Scene {
   public castLightningSpell(x: number, y: number): void {
     SoundSynthesizer.getInstance().playLightningStrike();
 
-    // Find all enemies within 120px radius of click
     const hitEnemies = this.enemies.filter(
       e => e.active && !e.isDead && Phaser.Math.Distance.Between(x, y, e.x, e.y) <= 130
     );
