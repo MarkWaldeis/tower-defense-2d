@@ -53,6 +53,27 @@ export class JuiceManager {
     });
   }
 
+  public showFloatingText(x: number, y: number, msg: string, color: string = '#facc15'): void {
+    const text = this.scene.add.text(x, y - 10, msg, {
+      fontFamily: '-apple-system, Inter, sans-serif',
+      fontSize: '13px',
+      fontStyle: '900',
+      color: color,
+      stroke: '#451a03',
+      strokeThickness: 3
+    }).setOrigin(0.5).setDepth(20);
+
+    this.scene.tweens.add({
+      targets: text,
+      y: y - 35,
+      alpha: 0,
+      scale: 1.2,
+      duration: 700,
+      ease: 'Back.out',
+      onComplete: () => text.destroy()
+    });
+  }
+
   public showFloatingGold(x: number, y: number, amount: number): void {
     const text = this.scene.add.text(x, y - 15, `+${amount} 🪙`, {
       fontFamily: '-apple-system, Inter, sans-serif',

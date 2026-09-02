@@ -2,7 +2,18 @@ export type TowerType = 'SLINGER' | 'CROSSBOW' | 'MAGE' | 'MORTAR';
 
 export type TargetingMode = 'FIRST' | 'LAST' | 'STRONGEST' | 'WEAKEST' | 'CLOSEST';
 
-export type EnemyType = 'GOBLIN' | 'SCUTTER' | 'GOLEM' | 'VULTURE' | 'SORCERER';
+export type EnemyType = 'GOBLIN' | 'SCUTTER' | 'GOLEM' | 'VULTURE' | 'SORCERER' | 'MUMMY';
+
+export interface TowerTierInfo {
+  tier: number;
+  name: string;
+  title: string;
+  damage: number;
+  range: number;
+  fireRate: number;
+  upgradeCost: number;
+  specialAbility: string;
+}
 
 export interface TowerStats {
   id: TowerType;
@@ -17,6 +28,7 @@ export interface TowerStats {
   upgradeCostMult: number;
   damageMultPerLevel: number;
   rangeMultPerLevel: number;
+  tiers: TowerTierInfo[];
 }
 
 export interface EnemyStats {
@@ -52,6 +64,7 @@ export interface MapData {
   name: string;
   region: string;
   description: string;
+  bgTextureKey: string;
   waypoints: Point[];
   buildSpots: Point[];
   startGold: number;

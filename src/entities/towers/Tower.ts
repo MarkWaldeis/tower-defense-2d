@@ -23,6 +23,7 @@ export class Tower extends Phaser.GameObjects.Container {
 
   private towerSprite: Phaser.GameObjects.Sprite;
   private levelBadge: Phaser.GameObjects.Text;
+  private auraRing: Phaser.GameObjects.Graphics;
 
   constructor(
     scene: Phaser.Scene,
@@ -46,10 +47,14 @@ export class Tower extends Phaser.GameObjects.Container {
     this.towerSprite = scene.add.sprite(0, 0, `tower_${type.toLowerCase()}`);
     this.add(this.towerSprite);
 
+    // Aura ring for upgraded tiers
+    this.auraRing = scene.add.graphics();
+    this.add(this.auraRing);
+
     // Level stars badge
-    this.levelBadge = scene.add.text(14, -22, '★', {
+    this.levelBadge = scene.add.text(16, -26, '★', {
       fontFamily: 'Inter, sans-serif',
-      fontSize: '12px',
+      fontSize: '13px',
       color: '#facc15',
       stroke: '#451a03',
       strokeThickness: 3
@@ -72,7 +77,8 @@ export class Tower extends Phaser.GameObjects.Container {
   }
 
   public getUpgradeCost(): number {
-    return Math.round(this.baseStats.cost * Math.pow(this.baseStats.upgradeCostMult, this.level));
+    const tier = this.baseStats.tiers[this.level - 1];
+    return tier ? tier.upgradeCost : 0;
   }
 
   public getSellValue(): number {
@@ -91,26 +97,39 @@ export class Tower extends Phaser.GameObjects.Container {
     this.levelBadge.setText(this.level === 2 ? '★★' : '★★★');
     this.levelBadge.setColor(this.level === 3 ? '#f59e0b' : '#facc15');
 
+    // Visual Tier Upgrade Aura
+    this.auraRing.clear();
+    if (this.level === 2) {
+      this.auraRing.lineStyle(2, 0x38bdf8, 0.7);
+      this.auraRing.strokeCircle(0, 8, 28);
+    } else if (this.level === 3) {
+      this.auraRing.lineStyle(3, 0xf59e0b, 0.9);
+      this.auraRing.strokeCircle(0, 8, 30);
+      this.auraRing.fillStyle(0xf59e0b, 0.15);
+      this.auraRing.fillCircle(0, 8, 30);
+    }
+
     SoundSynthesizer.getInstance().playUpgrade();
 
     this.scene.tweens.add({
       targets: this,
-      scaleX: 1.15,
-      scaleY: 1.15,
+      scaleX: 1.25,
+      scaleY: 1.25,
       yoyo: true,
-      duration: 140
+      duration: 160,
+      ease: 'Sine.easeInOut'
     });
 
     return true;
   }
 
   private updateStats(): void {
-    const lvlMultiplier = Math.pow(this.baseStats.damageMultPerLevel, this.level - 1);
-    const rangeMultiplier = Math.pow(this.baseStats.rangeMultPerLevel, this.level - 1);
-
-    this.currentDamage = Math.round(this.baseStats.damage * lvlMultiplier);
-    this.currentRange = Math.round(this.baseStats.range * rangeMultiplier);
-    this.currentFireRate = this.baseStats.fireRate * (1 + (this.level - 1) * 0.15);
+    const tier = this.baseStats.tiers[this.level - 1];
+    if (tier) {
+      this.currentDamage = tier.damage;
+      this.currentRange = tier.range;
+      this.currentFireRate = tier.fireRate;
+    }
   }
 
   public updateTower(
@@ -140,8 +159,8 @@ export class Tower extends Phaser.GameObjects.Container {
     // Recoil squash animation
     this.scene.tweens.add({
       targets: this.towerSprite,
-      scaleY: 0.9,
-      duration: 60,
+      scaleY: 0.88,
+      duration: 50,
       yoyo: true
     });
 
@@ -150,16 +169,23 @@ export class Tower extends Phaser.GameObjects.Container {
 
     switch (this.towerType) {
       case 'SLINGER':
-        projectile.fire('projectile_slinger', this.x, this.y - 12, target, this.currentDamage, 550, 0, false, undefined, juice);
+        // Tier 3: Critical chance
+        const isCrit = this.level === 3 && Math.random() < 0.35;
+        const slingerDmg = isCrit ? this.currentDamage * 2.5 : this.currentDamage;
+        projectile.fire('projectile_slinger', this.x, this.y - 12, target, slingerDmg, 580, 0, false, undefined, juice);
+        if (isCrit) {
+          juice.showFloatingText(this.x, this.y - 20, 'KRITISCH! 💥', '#ef4444');
+        }
         break;
       case 'CROSSBOW':
-        projectile.fire('projectile_crossbow', this.x, this.y - 10, target, this.currentDamage, 750, 0, false, undefined, juice);
+        projectile.fire('projectile_crossbow', this.x, this.y - 10, target, this.currentDamage, 780, 0, false, undefined, juice);
         break;
       case 'MAGE':
-        projectile.fire('projectile_mage', this.x, this.y - 16, target, this.currentDamage, 480, 0, true, undefined, juice);
+        projectile.fire('projectile_mage', this.x, this.y - 16, target, this.currentDamage, 500, 0, true, undefined, juice);
         break;
       case 'MORTAR':
-        projectile.fire('projectile_mortar', this.x, this.y - 14, target, this.currentDamage, 320, 85 + this.level * 10, false, allEnemies, juice);
+        const splashRadius = 80 + this.level * 20;
+        projectile.fire('projectile_mortar', this.x, this.y - 14, target, this.currentDamage, 340, splashRadius, false, allEnemies, juice);
         break;
     }
   }

@@ -19,6 +19,8 @@ export class Enemy extends Phaser.GameObjects.Container {
   private sprite: Phaser.GameObjects.Sprite;
   private healthBarBg: Phaser.GameObjects.Graphics;
   private healthBarFill: Phaser.GameObjects.Graphics;
+  private bossCrown?: Phaser.GameObjects.Text;
+  private bossAura?: Phaser.GameObjects.Graphics;
 
   private onDeathCallback?: (enemy: Enemy) => void;
   private onReachBaseCallback?: (enemy: Enemy) => void;
@@ -37,6 +39,24 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.currentHp = this.maxHp;
     this.waypoints = waypoints;
 
+    // Boss Aura
+    if (this.stats.isBoss) {
+      this.bossAura = scene.add.graphics();
+      this.bossAura.fillStyle(type === 'MUMMY' ? 0xeab308 : 0x9333ea, 0.25);
+      this.bossAura.fillCircle(0, 0, this.stats.size * 1.6);
+      this.add(this.bossAura);
+
+      scene.tweens.add({
+        targets: this.bossAura,
+        scaleX: 1.25,
+        scaleY: 1.25,
+        alpha: 0.1,
+        duration: 900,
+        yoyo: true,
+        repeat: -1
+      });
+    }
+
     // Sprite
     this.sprite = scene.add.sprite(0, 0, `enemy_${type.toLowerCase()}`);
     this.add(this.sprite);
@@ -47,10 +67,22 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.add(this.healthBarBg);
     this.add(this.healthBarFill);
 
+    if (this.stats.isBoss) {
+      this.bossCrown = scene.add.text(0, -this.stats.size - 18, type === 'MUMMY' ? '👑 PHARAO' : '👑 BOSS', {
+        fontFamily: '-apple-system, Inter, sans-serif',
+        fontSize: '11px',
+        fontStyle: '900',
+        color: '#facc15',
+        stroke: '#451a03',
+        strokeThickness: 3
+      }).setOrigin(0.5);
+      this.add(this.bossCrown);
+    }
+
     this.updateHealthBar();
 
     scene.add.existing(this);
-    this.setDepth(10);
+    this.setDepth(this.stats.isBoss ? 12 : 10);
 
     // Walking wobble animation
     scene.tweens.add({
@@ -87,7 +119,7 @@ export class Enemy extends Phaser.GameObjects.Container {
         this.y,
         effectiveDamage,
         ignoresArmor ? '#c084fc' : '#ffffff',
-        effectiveDamage > 35
+        effectiveDamage > 35 || !!this.stats.isBoss
       );
     }
 
@@ -110,13 +142,13 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.healthBarBg.clear();
     this.healthBarFill.clear();
 
-    if (this.currentHp >= this.maxHp) return;
+    if (this.currentHp >= this.maxHp && !this.stats.isBoss) return;
 
-    const barW = Math.max(28, this.stats.size * 1.5);
-    const barH = 4;
-    const barY = -this.stats.size - 8;
+    const barW = Math.max(32, this.stats.size * (this.stats.isBoss ? 2 : 1.5));
+    const barH = this.stats.isBoss ? 6 : 4;
+    const barY = -this.stats.size - (this.stats.isBoss ? 10 : 8);
 
-    this.healthBarBg.fillStyle(0x000000, 0.75);
+    this.healthBarBg.fillStyle(0x000000, 0.8);
     this.healthBarBg.fillRoundedRect(-barW / 2, barY, barW, barH, 2);
 
     const pct = Math.max(0, this.currentHp / this.maxHp);
@@ -178,11 +210,11 @@ export class Enemy extends Phaser.GameObjects.Container {
     SoundSynthesizer.getInstance().playExplosion(this.stats.isBoss);
 
     if (juice) {
-      juice.explode(this.x, this.y, this.stats.color, this.stats.isBoss ? 30 : 12, this.stats.isBoss ? 1.8 : 1);
+      juice.explode(this.x, this.y, this.stats.color, this.stats.isBoss ? 35 : 12, this.stats.isBoss ? 2 : 1);
       juice.showFloatingGold(this.x, this.y, this.stats.goldReward);
       if (this.stats.isBoss) {
-        juice.shakeCamera(0.018, 250);
-        juice.hitStop(80);
+        juice.shakeCamera(0.02, 300);
+        juice.hitStop(100);
       }
     }
 

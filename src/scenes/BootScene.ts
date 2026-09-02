@@ -6,16 +6,21 @@ export class BootScene extends Phaser.Scene {
   }
 
   public preload(): void {
-    // 1. Load AAA High-Res Generated Hand-Drawn Backgrounds & Assets
+    // 1. Load AAA Hand-Drawn Backgrounds & Assets
     this.load.image('map_desert_ruins', 'assets/desert_ruins_map.jpg');
+    this.load.image('map_bone_canyon', 'assets/desert_bone_canyon.jpg');
+    this.load.image('map_sun_pyramid', 'assets/desert_sun_pyramid.jpg');
     this.load.image('map_world_campaign', 'assets/world_map.jpg');
+
     this.load.image('tower_slinger_img', 'assets/tower_slinger.jpg');
     this.load.image('tower_crossbow_img', 'assets/tower_crossbow.jpg');
     this.load.image('tower_mage_img', 'assets/tower_mage.jpg');
     this.load.image('tower_mortar_img', 'assets/tower_mortar.jpg');
+
     this.load.image('enemy_goblin_img', 'assets/enemy_goblin.jpg');
     this.load.image('enemy_golem_img', 'assets/enemy_golem.jpg');
     this.load.image('enemy_scutter_img', 'assets/enemy_scutter.jpg');
+    this.load.image('enemy_mummy_img', 'assets/enemy_mummy.jpg');
     this.load.image('hero_valkyrie_img', 'assets/hero_valkyrie.jpg');
   }
 
@@ -27,11 +32,11 @@ export class BootScene extends Phaser.Scene {
   private generateProceduralSprites(): void {
     // 1. Build Spot Foundation Pad
     const gSpot = this.make.graphics({ x: 0, y: 0 });
-    gSpot.fillStyle(0xd4a373, 0.5);
+    gSpot.fillStyle(0xd4a373, 0.6);
     gSpot.fillCircle(30, 30, 26);
-    gSpot.lineStyle(3, 0x8d6b4f, 0.9);
+    gSpot.lineStyle(3, 0x8d6b4f, 0.95);
     gSpot.strokeCircle(30, 30, 26);
-    gSpot.fillStyle(0xe9c46a, 0.6);
+    gSpot.fillStyle(0xe9c46a, 0.7);
     gSpot.fillCircle(30, 30, 18);
     gSpot.lineStyle(1.5, 0xb08968, 1);
     gSpot.strokeCircle(30, 30, 18);
@@ -76,7 +81,7 @@ export class BootScene extends Phaser.Scene {
     gBomb.generateTexture('projectile_mortar', 16, 16);
     gBomb.destroy();
 
-    // 3. Fallback / Vector Sprites (if textures need mask or avatar)
+    // 3. Enemies
     const gGoblin = this.make.graphics({ x: 0, y: 0 });
     gGoblin.fillStyle(0x84cc16, 1);
     gGoblin.fillTriangle(4, 14, 14, 10, 14, 18);
@@ -87,9 +92,6 @@ export class BootScene extends Phaser.Scene {
     gGoblin.fillStyle(0xfef08a, 1);
     gGoblin.fillCircle(14, 13, 1.5);
     gGoblin.fillCircle(18, 13, 1.5);
-    gGoblin.fillStyle(0x71717a, 1);
-    gGoblin.fillRect(21, 14, 3, 12);
-    gGoblin.fillRect(17, 12, 11, 3);
     gGoblin.generateTexture('enemy_goblin', 32, 32);
     gGoblin.destroy();
 
@@ -101,10 +103,6 @@ export class BootScene extends Phaser.Scene {
     gScutter.fillStyle(0xb45309, 1);
     gScutter.fillTriangle(26, 12, 34, 8, 30, 16);
     gScutter.fillTriangle(26, 24, 34, 28, 30, 20);
-    gScutter.lineStyle(3, 0xb45309, 1);
-    gScutter.lineBetween(10, 18, 2, 10);
-    gScutter.fillStyle(0xef4444, 1);
-    gScutter.fillCircle(3, 9, 3);
     gScutter.generateTexture('enemy_scutter', 36, 36);
     gScutter.destroy();
 
@@ -113,8 +111,6 @@ export class BootScene extends Phaser.Scene {
     gGolem.fillRoundedRect(6, 6, 36, 36, 6);
     gGolem.lineStyle(3, 0x57534e, 1);
     gGolem.strokeRoundedRect(6, 6, 36, 36, 6);
-    gGolem.fillStyle(0x78716c, 1);
-    gGolem.fillRect(14, 10, 20, 12);
     gGolem.fillStyle(0x00f2ff, 1);
     gGolem.fillRect(16, 14, 6, 3);
     gGolem.fillRect(26, 14, 6, 3);
@@ -126,28 +122,34 @@ export class BootScene extends Phaser.Scene {
     gVulture.fillTriangle(20, 20, 2, 8, 14, 28);
     gVulture.fillTriangle(20, 20, 38, 8, 26, 28);
     gVulture.fillCircle(20, 18, 7);
-    gVulture.fillStyle(0xf59e0b, 1);
-    gVulture.fillTriangle(20, 24, 17, 34, 23, 34);
-    gVulture.fillStyle(0x84cc16, 1);
-    gVulture.fillCircle(20, 14, 4);
     gVulture.generateTexture('enemy_vulture', 40, 40);
     gVulture.destroy();
 
     const gSorcerer = this.make.graphics({ x: 0, y: 0 });
     gSorcerer.fillStyle(0x9333ea, 0.35);
     gSorcerer.fillCircle(24, 24, 22);
-    gSorcerer.lineStyle(2, 0xa855f7, 0.8);
-    gSorcerer.strokeCircle(24, 24, 22);
     gSorcerer.fillStyle(0x4c1d95, 1);
     gSorcerer.fillTriangle(24, 8, 10, 38, 38, 38);
-    gSorcerer.fillStyle(0x1e1b4b, 1);
-    gSorcerer.fillCircle(24, 16, 7);
-    gSorcerer.fillStyle(0xfbbf24, 1);
-    gSorcerer.fillCircle(22, 16, 1.5);
-    gSorcerer.fillCircle(26, 16, 1.5);
-    gSorcerer.fillStyle(0xd946ef, 1);
-    gSorcerer.fillCircle(38, 18, 4);
     gSorcerer.generateTexture('enemy_sorcerer', 48, 48);
     gSorcerer.destroy();
+
+    // Pharaoh Mummy Boss Sprite
+    const gMummy = this.make.graphics({ x: 0, y: 0 });
+    gMummy.fillStyle(0xca8a04, 0.4);
+    gMummy.fillCircle(26, 26, 24);
+    gMummy.fillStyle(0xe2e8f0, 1);
+    gMummy.fillRoundedRect(12, 10, 28, 34, 6);
+    gMummy.lineStyle(2, 0xa1a1aa, 1);
+    gMummy.strokeRoundedRect(12, 10, 28, 34, 6);
+    gMummy.fillStyle(0xeab308, 1);
+    gMummy.fillRect(16, 6, 20, 8); // Nemes golden headdress
+    gMummy.fillStyle(0x0284c7, 1);
+    gMummy.fillCircle(20, 18, 2.5); // glowing blue eye
+    gMummy.fillCircle(32, 18, 2.5);
+    gMummy.fillStyle(0xfacc15, 1);
+    gMummy.fillRect(40, 10, 4, 32); // golden scepter
+    gMummy.fillCircle(42, 8, 5);
+    gMummy.generateTexture('enemy_mummy', 52, 52);
+    gMummy.destroy();
   }
 }

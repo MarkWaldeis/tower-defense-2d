@@ -71,9 +71,10 @@ export class GameScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
 
-    // 1. Render AAA Hand-Drawn Desert Canyon Battle Map Background
-    if (this.textures.exists('map_desert_ruins')) {
-      const bg = this.add.image(width / 2, height / 2, 'map_desert_ruins');
+    // 1. Render AAA Hand-Drawn Map Background dynamically for selected level
+    const bgKey = this.mapData.bgTextureKey || 'map_desert_ruins';
+    if (this.textures.exists(bgKey)) {
+      const bg = this.add.image(width / 2, height / 2, bgKey);
       bg.setDisplaySize(width, height);
       bg.setDepth(0);
     } else {
@@ -93,11 +94,11 @@ export class GameScene extends Phaser.Scene {
       this.projectilePool.push(p);
     }
 
-    // 4. Render Build Spot Foundations with Enlarged Mobile Touch Area
+    // 4. Render Build Spot Foundations with Enlarged Touch Area
     this.renderBuildSpots();
 
-    // 5. Wave Manager setup
-    const waves = generateWaves(this.mapData.totalWaves);
+    // 5. Wave Manager setup for this specific level
+    const waves = generateWaves(this.mapData.totalWaves, this.levelId);
     this.waveManager = new WaveManager(this, waves, this.mapData.waypoints);
     this.setupWaveCallbacks();
 
@@ -123,7 +124,7 @@ export class GameScene extends Phaser.Scene {
 
       // Generous 44px radius touch hit-target for effortless mobile finger taps
       sprite.setInteractive(
-        new Phaser.Geom.Circle(30, 30, 42),
+        new Phaser.Geom.Circle(30, 30, 44),
         Phaser.Geom.Circle.Contains
       );
 
@@ -149,7 +150,7 @@ export class GameScene extends Phaser.Scene {
   private setupWaveCallbacks(): void {
     this.waveManager.setCallbacks(
       (type: EnemyType) => {
-        const enemy = new Enemy(this, type, this.mapData.waypoints, 1.0 + (this.waveManager.currentWaveNumber - 1) * 0.1);
+        const enemy = new Enemy(this, type, this.mapData.waypoints, 1.0 + (this.waveManager.currentWaveNumber - 1) * 0.12);
         enemy.setCallbacks(
           (deadEnemy) => this.handleEnemyDeath(deadEnemy),
           (breachedEnemy) => this.handleEnemyBreach(breachedEnemy)
@@ -220,7 +221,6 @@ export class GameScene extends Phaser.Scene {
     this.buildSpotObjects[spotIndex].setVisible(false);
 
     const tower = new Tower(this, spot.x, spot.y, spotIndex, type);
-    // Add enlarged hit target to tower as well
     tower.setSize(64, 64);
     tower.setInteractive({ useHandCursor: true });
     tower.on('pointerdown', () => {
@@ -262,7 +262,7 @@ export class GameScene extends Phaser.Scene {
     this.juiceManager.shakeCamera(0.015, 200);
 
     hitEnemies.forEach(e => {
-      e.takeDamage(120, true, this.juiceManager);
+      e.takeDamage(130, true, this.juiceManager);
     });
   }
 
@@ -319,6 +319,7 @@ export class GameScene extends Phaser.Scene {
       stars = 2;
     }
 
+    // Record victory and unlock next level!
     SaveManager.getInstance().recordVictory(this.levelId, stars, this.score, this.totalKills, this.gold);
     SoundSynthesizer.getInstance().playVictory();
 
