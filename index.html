@@ -19,7 +19,18 @@
 </head>
 <body>
   <div id="app-container">
+    <!-- Mobile Portrait Rotation Alert -->
+    <div id="portrait-warning" class="portrait-warning-overlay">
+      <div class="portrait-icon">📱 🔄</div>
+      <div class="portrait-text">BITTE INS QUERFORMAT DREHEN</div>
+      <div class="portrait-sub">Für das beste Spielerlebnis drehe bitte dein Smartphone ins Querformat (Landscape).</div>
+    </div>
+
+    <!-- Phaser Canvas Container -->
     <div id="game-container"></div>
+
+    <!-- Tap-Away Backdrop for Menus -->
+    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
 
     <!-- Kingdom Rush Frontiers Fantasy HUD -->
     <div id="hud-overlay" class="hud-overlay hidden">
@@ -58,7 +69,7 @@
         </div>
       </header>
 
-      <!-- Spells Drawer (Left side: Kettenblitz) -->
+      <!-- Spells Drawer (Left Thumb Zone: Kettenblitz) -->
       <div class="spells-drawer">
         <button class="spell-btn" id="btn-spell-lightning" title="Kettenblitz: Klicke auf den Weg!">
           <span class="spell-icon">⚡</span>
@@ -66,7 +77,7 @@
         </button>
       </div>
 
-      <!-- Wave Horn (Right side) -->
+      <!-- Wave Horn (Right Thumb Zone) -->
       <div class="wave-caller-container">
         <button class="btn-wave-horn" id="btn-call-wave">
           <span class="horn-title" id="btn-call-wave-text">WELLE STARTEN</span>
@@ -110,14 +121,14 @@
         </div>
 
         <div class="card-stats">
-          <div class="stat-item"><span>SCHADEN:</span><span id="inspect-dmg">14</span></div>
-          <div class="stat-item"><span>REICHWEITE:</span><span id="inspect-range">145</span></div>
+          <div class="stat-item"><span>SCHADEN:</span><span id="inspect-dmg">15</span></div>
+          <div class="stat-item"><span>REICHWEITE:</span><span id="inspect-range">150</span></div>
           <div class="stat-item"><span>KADENZ:</span><span id="inspect-firerate">2.6/s</span></div>
           <div class="stat-item"><span>SPEZIAL:</span><span id="inspect-special" style="color:#b91c1c">Schnell</span></div>
         </div>
 
         <div class="targeting-bar">
-          <span style="font-size:10px; font-weight:800;">ZIEL:</span>
+          <span style="font-size:11px; font-weight:800;">ZIELMODUS:</span>
           <div class="target-btns">
             <button class="target-btn active" data-target="FIRST">ERSTER</button>
             <button class="target-btn" data-target="LAST">LETZTER</button>
@@ -129,11 +140,11 @@
         <div class="card-actions">
           <button class="fantasy-btn btn-upg" id="btn-upgrade-tower">
             <div>UPGRADE</div>
-            <div id="inspect-upgrade-cost" style="font-size:10px">🪙 98</div>
+            <div id="inspect-upgrade-cost" style="font-size:11px">🪙 98</div>
           </button>
           <button class="fantasy-btn btn-sell" id="btn-sell-tower">
             <div>VERKAUF</div>
-            <div id="inspect-sell-value" style="font-size:10px">+🪙 45</div>
+            <div id="inspect-sell-value" style="font-size:11px">+🪙 45</div>
           </button>
         </div>
       </div>
@@ -144,7 +155,7 @@
           <h2 class="modal-title" id="modal-title">SIEG!</h2>
           <p id="modal-desc">Alle feindlichen Wellen zerstört!</p>
           <div class="modal-stars" id="modal-stars">★★★</div>
-          <div style="font-size:13px; font-weight:700; margin:10px 0;">
+          <div style="font-size:14px; font-weight:800; margin:12px 0;">
             Punkte: <span id="modal-final-score" style="color:#b91c1c">12000</span>
           </div>
           <div class="modal-btn-row">

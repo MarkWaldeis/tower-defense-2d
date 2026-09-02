@@ -19,16 +19,33 @@ export class UIScene extends Phaser.Scene {
     this.initHUD();
   }
 
+  private triggerHaptic(duration: number = 20): void {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(duration);
+    }
+  }
+
   private initHUD(): void {
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.classList.remove('hidden');
 
+    this.bindBackdropEvents();
     this.bindTopBarEvents();
     this.bindRadialBuildEvents();
     this.bindInspectCardEvents();
     this.bindSpellEvents();
     this.bindWaveButtonEvents();
     this.bindModalEvents();
+  }
+
+  private bindBackdropEvents(): void {
+    const backdrop = document.getElementById('menu-backdrop');
+    if (backdrop) {
+      backdrop.onclick = () => {
+        this.closeBuildMenu();
+        this.closeInspectCard();
+      };
+    }
   }
 
   private bindTopBarEvents(): void {
@@ -41,6 +58,7 @@ export class UIScene extends Phaser.Scene {
 
     if (btnSpeed && btnSpeedLabel) {
       btnSpeed.onclick = () => {
+        this.triggerHaptic(15);
         SoundSynthesizer.getInstance().playUiClick();
         const speeds = [1, 2, 3];
         const nextIdx = (speeds.indexOf(this.gameScene.gameSpeed) + 1) % speeds.length;
@@ -51,6 +69,7 @@ export class UIScene extends Phaser.Scene {
 
     if (btnPause) {
       btnPause.onclick = () => {
+        this.triggerHaptic(20);
         SoundSynthesizer.getInstance().playUiClick();
         const isPaused = this.gameScene.togglePause();
         const icon = document.getElementById('btn-pause-icon');
@@ -60,6 +79,7 @@ export class UIScene extends Phaser.Scene {
 
     if (btnSound && btnSoundIcon) {
       btnSound.onclick = () => {
+        this.triggerHaptic(15);
         const enabled = SoundSynthesizer.getInstance().toggle();
         btnSoundIcon.innerText = enabled ? '🔊' : '🔇';
       };
@@ -67,6 +87,7 @@ export class UIScene extends Phaser.Scene {
 
     if (btnBackMap) {
       btnBackMap.onclick = () => {
+        this.triggerHaptic(30);
         SoundSynthesizer.getInstance().playUiClick();
         const hud = document.getElementById('hud-overlay');
         if (hud) hud.classList.add('hidden');
@@ -84,6 +105,7 @@ export class UIScene extends Phaser.Scene {
         const target = (e.currentTarget as HTMLElement);
         const type = target.getAttribute('data-type') as TowerType;
         if (type && this.selectedSpotIndex !== null) {
+          this.triggerHaptic(35);
           const success = this.gameScene.buildTowerOnSpot(this.selectedSpotIndex, type);
           if (success) {
             this.closeBuildMenu();
@@ -98,20 +120,29 @@ export class UIScene extends Phaser.Scene {
     this.closeInspectCard();
 
     const menu = document.getElementById('radial-build-menu');
+    const backdrop = document.getElementById('menu-backdrop');
     if (!menu) return;
 
-    // Position menu near the spot or centered
-    menu.style.left = `${Math.min(Math.max(screenX, 180), window.innerWidth - 180)}px`;
-    menu.style.top = `${Math.min(Math.max(screenY, 120), window.innerHeight - 120)}px`;
+    // Smart Clamping for mobile landscape screens
+    const menuWidth = 360;
+    const menuHeight = 110;
+    const clampedX = Math.max(menuWidth / 2 + 10, Math.min(screenX, window.innerWidth - menuWidth / 2 - 10));
+    const clampedY = Math.max(menuHeight / 2 + 50, Math.min(screenY, window.innerHeight - menuHeight / 2 - 20));
+
+    menu.style.left = `${clampedX}px`;
+    menu.style.top = `${clampedY}px`;
     menu.classList.remove('hidden');
 
+    if (backdrop) backdrop.classList.remove('hidden');
     this.updateBuildMenuCards();
   }
 
   public closeBuildMenu(): void {
     this.selectedSpotIndex = null;
     const menu = document.getElementById('radial-build-menu');
+    const backdrop = document.getElementById('menu-backdrop');
     if (menu) menu.classList.add('hidden');
+    if (backdrop) backdrop.classList.add('hidden');
     this.gameScene.clearRange();
   }
 
@@ -135,6 +166,7 @@ export class UIScene extends Phaser.Scene {
     const btnLightning = document.getElementById('btn-spell-lightning');
     if (btnLightning) {
       btnLightning.onclick = () => {
+        this.triggerHaptic(25);
         SoundSynthesizer.getInstance().playUiClick();
         if (this.gameScene.activeSpell === 'LIGHTNING') {
           this.clearSpellSelection();
@@ -159,6 +191,7 @@ export class UIScene extends Phaser.Scene {
 
     if (closeBtn) {
       closeBtn.onclick = () => {
+        this.triggerHaptic(15);
         SoundSynthesizer.getInstance().playUiClick();
         this.closeInspectCard();
       };
@@ -169,11 +202,13 @@ export class UIScene extends Phaser.Scene {
         if (!this.selectedTower) return;
         const cost = this.selectedTower.getUpgradeCost();
         if (this.gameScene.gold >= cost) {
+          this.triggerHaptic(40);
           this.gameScene.spendGold(cost);
           this.selectedTower.upgrade();
           this.updateInspectCardStats();
           this.gameScene.showRange(this.selectedTower.x, this.selectedTower.y, this.selectedTower.currentRange);
         } else {
+          this.triggerHaptic(100);
           SoundSynthesizer.getInstance().playError();
         }
       };
@@ -182,6 +217,7 @@ export class UIScene extends Phaser.Scene {
     if (btnSell) {
       btnSell.onclick = () => {
         if (!this.selectedTower) return;
+        this.triggerHaptic(25);
         const sellVal = this.selectedTower.getSellValue();
         this.gameScene.addGold(sellVal);
         SoundSynthesizer.getInstance().playCoin();
@@ -195,6 +231,7 @@ export class UIScene extends Phaser.Scene {
       btn.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).getAttribute('data-target') as TargetingMode;
         if (target && this.selectedTower) {
+          this.triggerHaptic(15);
           SoundSynthesizer.getInstance().playUiClick();
           this.selectedTower.targetingMode = target;
           targetBtns.forEach(b => b.classList.remove('active'));
@@ -209,16 +246,20 @@ export class UIScene extends Phaser.Scene {
     this.closeBuildMenu();
 
     const card = document.getElementById('tower-inspect-card');
+    const backdrop = document.getElementById('menu-backdrop');
     if (!card) return;
 
     card.classList.remove('hidden');
+    if (backdrop) backdrop.classList.remove('hidden');
     this.updateInspectCardStats();
   }
 
   public closeInspectCard(): void {
     this.selectedTower = null;
     const card = document.getElementById('tower-inspect-card');
+    const backdrop = document.getElementById('menu-backdrop');
     if (card) card.classList.add('hidden');
+    if (backdrop) backdrop.classList.add('hidden');
     this.gameScene.clearRange();
   }
 
@@ -270,6 +311,7 @@ export class UIScene extends Phaser.Scene {
     const btnCallWave = document.getElementById('btn-call-wave');
     if (btnCallWave) {
       btnCallWave.onclick = () => {
+        this.triggerHaptic(30);
         this.closeBuildMenu();
         this.closeInspectCard();
         this.gameScene.startNextWave();
@@ -311,6 +353,7 @@ export class UIScene extends Phaser.Scene {
 
     if (btnRestart) {
       btnRestart.onclick = () => {
+        this.triggerHaptic(25);
         SoundSynthesizer.getInstance().playUiClick();
         this.hideModal();
         this.gameScene.restartLevel();
@@ -319,6 +362,7 @@ export class UIScene extends Phaser.Scene {
 
     if (btnMenu) {
       btnMenu.onclick = () => {
+        this.triggerHaptic(25);
         SoundSynthesizer.getInstance().playUiClick();
         this.hideModal();
         const hud = document.getElementById('hud-overlay');

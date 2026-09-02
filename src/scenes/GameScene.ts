@@ -93,7 +93,7 @@ export class GameScene extends Phaser.Scene {
       this.projectilePool.push(p);
     }
 
-    // 4. Render Build Spot Foundations
+    // 4. Render Build Spot Foundations with Enlarged Mobile Touch Area
     this.renderBuildSpots();
 
     // 5. Wave Manager setup
@@ -119,8 +119,13 @@ export class GameScene extends Phaser.Scene {
   private renderBuildSpots(): void {
     this.buildSpots.forEach((spot, index) => {
       const sprite = this.add.sprite(spot.x, spot.y, 'build_spot_empty')
-        .setInteractive({ useHandCursor: true })
         .setDepth(3);
+
+      // Generous 44px radius touch hit-target for effortless mobile finger taps
+      sprite.setInteractive(
+        new Phaser.Geom.Circle(30, 30, 42),
+        Phaser.Geom.Circle.Contains
+      );
 
       sprite.on('pointerover', () => {
         if (!spot.occupied) {
@@ -215,6 +220,14 @@ export class GameScene extends Phaser.Scene {
     this.buildSpotObjects[spotIndex].setVisible(false);
 
     const tower = new Tower(this, spot.x, spot.y, spotIndex, type);
+    // Add enlarged hit target to tower as well
+    tower.setSize(64, 64);
+    tower.setInteractive({ useHandCursor: true });
+    tower.on('pointerdown', () => {
+      SoundSynthesizer.getInstance().playUiClick();
+      this.handleSpotClick(spotIndex);
+    });
+
     this.towers.push(tower);
 
     SoundSynthesizer.getInstance().playUpgrade();
@@ -241,7 +254,7 @@ export class GameScene extends Phaser.Scene {
     SoundSynthesizer.getInstance().playLightningStrike();
 
     const hitEnemies = this.enemies.filter(
-      e => e.active && !e.isDead && Phaser.Math.Distance.Between(x, y, e.x, e.y) <= 130
+      e => e.active && !e.isDead && Phaser.Math.Distance.Between(x, y, e.x, e.y) <= 140
     );
 
     const chainPoints = hitEnemies.map(e => ({ x: e.x, y: e.y }));
