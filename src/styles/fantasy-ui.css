@@ -361,75 +361,124 @@ html, body {
   pointer-events: none !important;
 }
 
-/* Radial / Popup Tower Build Menu (Opens over clicked stone spot) */
-.radial-build-menu {
+/* Kingdom Rush Mobile Build Dock (Anchored at Bottom Center) */
+.build-dock-menu {
   position: absolute;
+  bottom: calc(var(--safe-bottom) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   background: var(--c-wood-dark);
   border: 3px solid var(--c-gold-dark);
-  border-radius: 24px;
-  padding: 10px 12px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), var(--wood-shadow);
-  z-index: 26;
-  animation: buildMenuPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  /* left/top are the anchor center — keep menu centered on that point */
-  transform: translate(-50%, -50%);
-  transform-origin: center center;
+  border-radius: 20px;
+  padding: 8px 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), var(--wood-shadow);
+  z-index: 28;
+  animation: slideUpDock 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
 }
 
-.radial-build-menu.hidden {
+.build-dock-menu.hidden {
   display: none !important;
 }
 
+.dock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 4px 2px;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
+}
+
+.dock-title {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--c-gold);
+  letter-spacing: 0.5px;
+}
+
+.dock-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--c-parchment);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 50%;
+  line-height: 1;
+}
+
+.dock-close-btn:active {
+  transform: scale(0.85);
+  color: #ef4444;
+}
+
+.dock-cards-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
 .tower-card {
-  width: 80px;
-  height: 90px;
+  width: 78px;
+  height: 74px;
   background: var(--c-parchment);
   border: 2px solid var(--c-wood-mid);
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.1s ease, border-color 0.1s ease;
   color: var(--c-wood-dark);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  touch-action: manipulation;
+  font-family: inherit;
 }
 
 .tower-card:hover {
-  transform: translateY(-4px) scale(1.05);
+  transform: translateY(-3px) scale(1.04);
   border-color: var(--c-red-banner);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
 }
 
 .tower-card:active {
-  transform: scale(0.94);
+  transform: scale(0.92);
 }
 
 .tower-card.disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   filter: grayscale(1);
   cursor: not-allowed;
   pointer-events: none;
 }
 
 .tc-icon {
-  font-size: 24px;
+  font-size: 22px;
+  line-height: 1;
 }
 
 .tc-name {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 900;
   text-align: center;
+  letter-spacing: 0.2px;
 }
 
 .tc-cost {
   font-size: 11px;
   font-weight: 900;
   color: var(--c-wood-light);
+}
+
+@keyframes slideUpDock {
+  from { transform: translate(-50%, 40px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
 }
 
 /* Tower Inspector Card (Kingdom Rush Parchment) */

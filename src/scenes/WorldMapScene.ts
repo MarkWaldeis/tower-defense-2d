@@ -56,7 +56,11 @@ export class WorldMapScene extends Phaser.Scene {
 
   private triggerHaptic(duration: number = 25): void {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate(duration);
+      try {
+        navigator.vibrate(duration);
+      } catch (e) {
+        // ignore on unsupported devices
+      }
     }
   }
 
@@ -98,20 +102,20 @@ export class WorldMapScene extends Phaser.Scene {
       // Node Foundation Base
       const base = this.add.graphics();
       base.fillStyle(isUnlocked ? 0xfef08a : 0x78716c, 0.95);
-      base.fillCircle(0, 0, 26);
+      base.fillCircle(0, 0, 28);
       base.lineStyle(3.5, isUnlocked ? 0xb45309 : 0x44403c, 1);
-      base.strokeCircle(0, 0, 26);
+      base.strokeCircle(0, 0, 28);
       container.add(base);
 
       if (isUnlocked) {
         // Red Kingdom Rush Banner Flag
         const flag = this.add.graphics();
         flag.fillStyle(0x451a03, 1);
-        flag.fillRect(-2, -38, 4, 38);
+        flag.fillRect(-2, -40, 4, 40);
         flag.fillStyle(0xdc2626, 1);
-        flag.fillTriangle(2, -38, 32, -26, 2, -14);
+        flag.fillTriangle(2, -40, 34, -28, 2, -16);
         flag.lineStyle(1.5, 0x991b1b, 1);
-        flag.strokeTriangle(2, -38, 32, -26, 2, -14);
+        flag.strokeTriangle(2, -40, 34, -28, 2, -16);
         container.add(flag);
 
         // Stage Number
@@ -128,7 +132,7 @@ export class WorldMapScene extends Phaser.Scene {
         for (let i = 0; i < 3; i++) {
           starsStr += i < levelData.stars ? '★' : '☆';
         }
-        const starsText = this.add.text(0, 36, starsStr, {
+        const starsText = this.add.text(0, 38, starsStr, {
           fontFamily: 'Inter, sans-serif',
           fontSize: '16px',
           fontStyle: 'bold',
@@ -139,7 +143,7 @@ export class WorldMapScene extends Phaser.Scene {
         container.add(starsText);
 
         // Pulsing glowing ring for current stage
-        const pulse = this.add.circle(0, 0, 32, 0xfacc15, 0.5);
+        const pulse = this.add.circle(0, 0, 34, 0xfacc15, 0.5);
         this.tweens.add({
           targets: pulse,
           scale: 1.4,
@@ -150,21 +154,30 @@ export class WorldMapScene extends Phaser.Scene {
         });
         container.add(pulse);
 
-        // Dedicated 110px diameter touch hitZone for instant 0ms touch response
-        const hitZone = this.add.circle(node.x, node.y, 55, 0x000000, 0)
-          .setInteractive({ useHandCursor: true })
-          .setDepth(20);
-
-        hitZone.on('pointerover', () => {
-          this.tweens.add({ targets: container, scale: 1.15, duration: 120 });
-        });
-        hitZone.on('pointerout', () => {
-          this.tweens.add({ targets: container, scale: 1.0, duration: 120 });
-        });
-        hitZone.on('pointerdown', () => {
+        const onNodeClick = () => {
           this.triggerHaptic(30);
           SoundSynthesizer.getInstance().playUiClick();
           this.openStageCard(node);
+        };
+
+        // Dedicated Phaser Zone for guaranteed touch response (Zones have alpha:1 and visible:true)
+        const hitZone = this.add.zone(node.x, node.y, 110, 110)
+          .setInteractive({ useHandCursor: true })
+          .setDepth(20);
+        hitZone.on('pointerdown', onNodeClick);
+
+        base.setInteractive(new Phaser.Geom.Circle(0, 0, 42), Phaser.Geom.Circle.Contains);
+        base.on('pointerdown', onNodeClick);
+
+        container.setSize(90, 90);
+        container.setInteractive(new Phaser.Geom.Circle(0, 0, 45), Phaser.Geom.Circle.Contains);
+        container.on('pointerdown', onNodeClick);
+
+        container.on('pointerover', () => {
+          this.tweens.add({ targets: container, scale: 1.15, duration: 120 });
+        });
+        container.on('pointerout', () => {
+          this.tweens.add({ targets: container, scale: 1.0, duration: 120 });
         });
       } else {
         const lock = this.add.text(0, 0, '🔒', {
@@ -178,6 +191,7 @@ export class WorldMapScene extends Phaser.Scene {
   private openStageCard(node: StageNode): void {
     if (this.cardContainer) {
       this.cardContainer.destroy();
+      this.cardContainer = null;
     }
 
     const { width, height } = this.scale;
@@ -187,16 +201,13 @@ export class WorldMapScene extends Phaser.Scene {
 
     this.cardContainer = this.add.container(width / 2, height / 2).setDepth(30);
 
-    // Backdrop — only the dimmed area outside the parchment card closes the dialog.
-    // A full-screen interactive rect would race with the battle button on iOS.
+    // Backdrop overlay
     const overlay = this.add.graphics();
-    overlay.fillStyle(0x000000, 0.6);
+    overlay.fillStyle(0x000000, 0.65);
     overlay.fillRect(-width / 2, -height / 2, width, height);
-    const cardW = 380;
-    const cardH = 310;
-    const dismissZone = this.add
-      .rectangle(0, 0, width, height, 0x000000, 0)
-      .setInteractive();
+
+    const dismissZone = this.add.zone(0, 0, width, height)
+      .setInteractive({ useHandCursor: true });
     dismissZone.on('pointerdown', () => {
       this.triggerHaptic(15);
       if (this.cardContainer) {
@@ -205,6 +216,8 @@ export class WorldMapScene extends Phaser.Scene {
       }
     });
 
+    const cardW = 380;
+    const cardH = 310;
     const card = this.add.graphics();
 
     // Wood Border
@@ -217,13 +230,8 @@ export class WorldMapScene extends Phaser.Scene {
     card.fillStyle(0xfef3c7, 1);
     card.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 16);
 
-    // Block dismiss taps that land on the card body
-    const cardBlocker = this.add
-      .rectangle(0, 0, cardW + 16, cardH + 16, 0x000000, 0)
-      .setInteractive();
-    cardBlocker.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
-      event.stopPropagation();
-    });
+    // Card body absorbs clicks so clicks on text/card NEVER dismiss the modal
+    card.setInteractive(new Phaser.Geom.Rectangle(-cardW / 2 - 8, -cardH / 2 - 8, cardW + 16, cardH + 16), Phaser.Geom.Rectangle.Contains);
 
     // Red Ribbon Banner
     const banner = this.add.graphics();
@@ -272,14 +280,13 @@ export class WorldMapScene extends Phaser.Scene {
       color: '#78350f'
     }).setOrigin(0.5);
 
-    // Battle Button — hit target is a direct child of the card container
-    // (nested container interactives are less reliable on iOS WKWebView)
+    // Battle Button (Giant 240x54 touch target)
     const btnBattle = this.add.container(0, cardH / 2 - 45);
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x16a34a, 1);
-    btnBg.fillRoundedRect(-120, -26, 240, 52, 26);
+    btnBg.fillRoundedRect(-120, -27, 240, 54, 27);
     btnBg.lineStyle(2.5, 0x14532d, 1);
-    btnBg.strokeRoundedRect(-120, -26, 240, 52, 26);
+    btnBg.strokeRoundedRect(-120, -27, 240, 54, 27);
 
     const btnText = this.add.text(0, 0, '⚔️ ZUM KAMPF ⚔️', {
       fontFamily: '-apple-system, Inter, "Segoe UI", sans-serif',
@@ -289,18 +296,28 @@ export class WorldMapScene extends Phaser.Scene {
       letterSpacing: 1
     }).setOrigin(0.5);
 
-    btnBattle.add([btnBg, btnText]);
-
-    const btnHit = this.add
-      .rectangle(0, cardH / 2 - 45, 260, 64, 0x000000, 0)
-      .setInteractive({ useHandCursor: true });
-
-    btnHit.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
-      event.stopPropagation();
+    const launchBattle = () => {
       this.triggerHaptic(40);
       SoundSynthesizer.getInstance().playWaveHorn();
+      if (this.cardContainer) {
+        this.cardContainer.destroy();
+        this.cardContainer = null;
+      }
       this.scene.start('GameScene', { levelId: node.id });
-    });
+    };
+
+    const btnZone = this.add.zone(0, 0, 240, 54)
+      .setInteractive({ useHandCursor: true });
+    btnZone.on('pointerdown', launchBattle);
+
+    btnBg.setInteractive(new Phaser.Geom.Rectangle(-120, -27, 240, 54), Phaser.Geom.Rectangle.Contains);
+    btnBg.on('pointerdown', launchBattle);
+
+    btnBattle.setSize(240, 54);
+    btnBattle.setInteractive(new Phaser.Geom.Rectangle(-120, -27, 240, 54), Phaser.Geom.Rectangle.Contains);
+    btnBattle.on('pointerdown', launchBattle);
+
+    btnBattle.add([btnBg, btnText, btnZone]);
 
     // Close button
     const btnCloseText = this.add.text(cardW / 2 - 18, -cardH / 2 + 18, '✕', {
@@ -310,24 +327,26 @@ export class WorldMapScene extends Phaser.Scene {
       color: '#78350f'
     }).setOrigin(0.5);
 
-    const closeHit = this.add.circle(cardW / 2 - 18, -cardH / 2 + 18, 32, 0x000000, 0)
-      .setInteractive({ useHandCursor: true });
-
-    closeHit.on('pointerdown', (_pointer: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
-      event.stopPropagation();
+    const closeCard = () => {
       this.triggerHaptic(15);
       SoundSynthesizer.getInstance().playUiClick();
       if (this.cardContainer) {
         this.cardContainer.destroy();
         this.cardContainer = null;
       }
-    });
+    };
+
+    btnCloseText.setInteractive(new Phaser.Geom.Circle(0, 0, 25), Phaser.Geom.Circle.Contains);
+    btnCloseText.on('pointerdown', closeCard);
+
+    const closeZone = this.add.zone(cardW / 2 - 18, -cardH / 2 + 18, 54, 54)
+      .setInteractive({ useHandCursor: true });
+    closeZone.on('pointerdown', closeCard);
 
     this.cardContainer.add([
       overlay,
       dismissZone,
       card,
-      cardBlocker,
       banner,
       titleText,
       regionText,
@@ -335,9 +354,8 @@ export class WorldMapScene extends Phaser.Scene {
       starText,
       scoreText,
       btnBattle,
-      btnHit,
       btnCloseText,
-      closeHit
+      closeZone
     ]);
 
     this.cardContainer.setScale(0.8);

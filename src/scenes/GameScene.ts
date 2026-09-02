@@ -193,7 +193,7 @@ export class GameScene extends Phaser.Scene {
     if (!spot.occupied) {
       this.selectedSpotIndex = spotIndex;
       this.selectedTower = null;
-      this.uiScene.openBuildMenuForSpot(spotIndex, spot.x, spot.y);
+      this.uiScene.openBuildMenuForSpot(spotIndex);
       this.showRange(spot.x, spot.y, TOWERS_CONFIG.SLINGER.range);
     } else {
       const tower = this.towers.find(t => t.spotIndex === spotIndex);

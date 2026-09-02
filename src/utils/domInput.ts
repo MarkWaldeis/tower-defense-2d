@@ -1,7 +1,7 @@
 /**
- * Reliable tap binding for iOS Safari / WKWebView and desktop.
- * On touch: handle on touchend and preventDefault to suppress the ghost click.
- * On mouse/pen: use click.
+ * Ultra-reliable tap binding for iOS Safari, Web App, Android and Desktop.
+ * Listens to pointerdown for 0ms instantaneous response on touchscreens,
+ * and debounces click to prevent duplicate triggers.
  */
 export function bindTap(
   element: HTMLElement | null,
@@ -12,25 +12,17 @@ export function bindTap(
   const isDisabled = (): boolean =>
     element.classList.contains('disabled') || Boolean((element as HTMLButtonElement).disabled);
 
-  let touchHandledAt = 0;
+  let lastTapTime = 0;
 
-  element.addEventListener(
-    'touchend',
-    (event: TouchEvent) => {
-      if (isDisabled()) return;
-      // Suppress the synthetic mouse click that iOS would fire ~300ms later
-      // (important when the handler removes/hides the element).
-      event.preventDefault();
-      touchHandledAt = Date.now();
-      handler(event);
-    },
-    { passive: false }
-  );
+  element.addEventListener('pointerdown', (event: PointerEvent) => {
+    if (isDisabled()) return;
+    lastTapTime = Date.now();
+    handler(event);
+  });
 
   element.addEventListener('click', (event: MouseEvent) => {
     if (isDisabled()) return;
-    // Ignore the ghost click after a touchend we already handled
-    if (Date.now() - touchHandledAt < 700) {
+    if (Date.now() - lastTapTime < 400) {
       event.preventDefault();
       event.stopPropagation();
       return;

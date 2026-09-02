@@ -29,11 +29,11 @@
     <!-- Phaser Canvas Container -->
     <div id="game-container"></div>
 
+    <!-- Tap-Away Backdrop for Menus -->
+    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+
     <!-- Kingdom Rush Frontiers Fantasy HUD (Only active during battle) -->
     <div id="hud-overlay" class="hud-overlay hidden">
-      <!-- Tap-Away Backdrop for Menus (inside HUD so z-index stacks correctly) -->
-      <div id="menu-backdrop" class="menu-backdrop hidden"></div>
-
       <!-- Top Wooden Status Bar -->
       <header class="fantasy-top-bar">
         <div class="stat-badge gold-badge" title="Gold">
@@ -54,16 +54,16 @@
         </div>
 
         <div class="top-actions">
-          <button class="wood-icon-btn" id="btn-speed" title="Geschwindigkeit (1x / 2x / 3x)">
+          <button type="button" class="wood-icon-btn" id="btn-speed" title="Geschwindigkeit (1x / 2x / 3x)">
             <span id="btn-speed-label">1x</span>
           </button>
-          <button class="wood-icon-btn" id="btn-pause" title="Pause">
+          <button type="button" class="wood-icon-btn" id="btn-pause" title="Pause">
             <span id="btn-pause-icon">⏸️</span>
           </button>
-          <button class="wood-icon-btn" id="btn-sound" title="Audio">
+          <button type="button" class="wood-icon-btn" id="btn-sound" title="Audio">
             <span id="btn-sound-icon">🔊</span>
           </button>
-          <button class="wood-icon-btn" id="btn-back-map" title="Zur Weltkarte">
+          <button type="button" class="wood-icon-btn" id="btn-back-map" title="Zur Weltkarte">
             <span>🗺️</span>
           </button>
         </div>
@@ -71,7 +71,7 @@
 
       <!-- Spells Drawer (Left Thumb Zone: Kettenblitz) -->
       <div class="spells-drawer">
-        <button class="spell-btn" id="btn-spell-lightning" title="Kettenblitz: Klicke auf den Weg!">
+        <button type="button" class="spell-btn" id="btn-spell-lightning" title="Kettenblitz: Klicke auf den Weg!">
           <span class="spell-icon">⚡</span>
           <span class="spell-name">BLITZ</span>
         </button>
@@ -79,33 +79,39 @@
 
       <!-- Wave Horn (Right Thumb Zone) -->
       <div class="wave-caller-container">
-        <button class="btn-wave-horn" id="btn-call-wave">
+        <button type="button" class="btn-wave-horn" id="btn-call-wave">
           <span class="horn-title" id="btn-call-wave-text">WELLE STARTEN</span>
           <span class="horn-bonus">+30 🪙 Bonus</span>
         </button>
       </div>
 
-      <!-- Radial / Popup Tower Build Menu -->
-      <div id="radial-build-menu" class="radial-build-menu hidden">
-        <div class="tower-card" data-type="SLINGER">
-          <span class="tc-icon">🏹</span>
-          <span class="tc-name">SCHLEUDER</span>
-          <span class="tc-cost">🪙 70</span>
+      <!-- Kingdom Rush Mobile Build Dock (Anchored at Bottom Center) -->
+      <div id="build-dock-menu" class="build-dock-menu hidden">
+        <div class="dock-header">
+          <span class="dock-title">🏰 TURM BAUEN</span>
+          <button type="button" class="dock-close-btn" id="btn-close-dock" aria-label="Schließen">✕</button>
         </div>
-        <div class="tower-card" data-type="CROSSBOW">
-          <span class="tc-icon">⚔️</span>
-          <span class="tc-name">ARMBRUST</span>
-          <span class="tc-cost">🪙 110</span>
-        </div>
-        <div class="tower-card" data-type="MAGE">
-          <span class="tc-icon">🔮</span>
-          <span class="tc-name">MAGIER</span>
-          <span class="tc-cost">🪙 130</span>
-        </div>
-        <div class="tower-card" data-type="MORTAR">
-          <span class="tc-icon">🐉</span>
-          <span class="tc-name">MÖRSER</span>
-          <span class="tc-cost">🪙 150</span>
+        <div class="dock-cards-row">
+          <button type="button" class="tower-card" data-type="SLINGER">
+            <span class="tc-icon">🏹</span>
+            <span class="tc-name">SCHLEUDER</span>
+            <span class="tc-cost">🪙 70</span>
+          </button>
+          <button type="button" class="tower-card" data-type="CROSSBOW">
+            <span class="tc-icon">⚔️</span>
+            <span class="tc-name">ARMBRUST</span>
+            <span class="tc-cost">🪙 110</span>
+          </button>
+          <button type="button" class="tower-card" data-type="MAGE">
+            <span class="tc-icon">🔮</span>
+            <span class="tc-name">MAGIER</span>
+            <span class="tc-cost">🪙 130</span>
+          </button>
+          <button type="button" class="tower-card" data-type="MORTAR">
+            <span class="tc-icon">🐉</span>
+            <span class="tc-name">MÖRSER</span>
+            <span class="tc-cost">🪙 150</span>
+          </button>
         </div>
       </div>
 
@@ -117,7 +123,7 @@
             <div class="tower-name" id="inspect-name">Schleuder-Turm</div>
             <div class="tower-lvl" id="inspect-level">STUFE 1 • BASIC</div>
           </div>
-          <button class="close-btn" id="btn-close-inspect">✕</button>
+          <button type="button" class="close-btn" id="btn-close-inspect" aria-label="Schließen">✕</button>
         </div>
 
         <div class="card-stats">
@@ -130,21 +136,21 @@
         <div class="targeting-bar">
           <span style="font-size:11px; font-weight:800;">ZIELMODUS:</span>
           <div class="target-btns">
-            <button class="target-btn active" data-target="FIRST">ERSTER</button>
-            <button class="target-btn" data-target="LAST">LETZTER</button>
-            <button class="target-btn" data-target="STRONGEST">STARK</button>
-            <button class="target-btn" data-target="CLOSEST">NAH</button>
+            <button type="button" class="target-btn active" data-target="FIRST">ERSTER</button>
+            <button type="button" class="target-btn" data-target="LAST">LETZTER</button>
+            <button type="button" class="target-btn" data-target="STRONGEST">STARK</button>
+            <button type="button" class="target-btn" data-target="CLOSEST">NAH</button>
           </div>
         </div>
 
         <div class="card-actions">
-          <button class="fantasy-btn btn-upg" id="btn-upgrade-tower">
-            <div>UPGRADE</div>
-            <div id="inspect-upgrade-cost" style="font-size:11px">🪙 95</div>
+          <button type="button" class="fantasy-btn btn-upg" id="btn-upgrade-tower">
+            <div class="btn-lbl">UPGRADE</div>
+            <div id="inspect-upgrade-cost" class="btn-sub">🪙 95</div>
           </button>
-          <button class="fantasy-btn btn-sell" id="btn-sell-tower">
-            <div>VERKAUF</div>
-            <div id="inspect-sell-value" style="font-size:11px">+🪙 45</div>
+          <button type="button" class="fantasy-btn btn-sell" id="btn-sell-tower">
+            <div class="btn-lbl">VERKAUF</div>
+            <div id="inspect-sell-value" class="btn-sub">+🪙 45</div>
           </button>
         </div>
       </div>
@@ -159,8 +165,8 @@
             Punkte: <span id="modal-final-score" style="color:#b91c1c">12000</span>
           </div>
           <div class="modal-btn-row">
-            <button class="btn-p" id="btn-modal-restart">NOCHMAL 🔁</button>
-            <button class="btn-s" id="btn-modal-menu">WELTKARTE 🗺️</button>
+            <button type="button" class="btn-p" id="btn-modal-restart">NOCHMAL 🔁</button>
+            <button type="button" class="btn-s" id="btn-modal-menu">WELTKARTE 🗺️</button>
           </div>
         </div>
       </div>
